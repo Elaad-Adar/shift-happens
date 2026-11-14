@@ -4,8 +4,8 @@ import ShiftCore
 
 /// Selects the word before the cursor through Accessibility: reads the focused field's text and caret,
 /// finds the word in logical order (`WordWalk.wordBefore`), and sets the selection range directly.
-/// Unlike ⇧← this is right for right-to-left text. Nil when the focused app does not expose its text
-/// and selection (some web views, terminals, secure fields); the caller then falls back to the key walk.
+/// Unlike ⇧← this is right for right-to-left text. Only an `.unsupported` outcome (some web views,
+/// terminals, secure fields) lets the caller fall back to the key walk.
 enum AXWord {
     struct Selection {
         /// The text the app should now have selected.
@@ -14,19 +14,29 @@ enum AXWord {
         let restore: () -> Void
     }
 
-    static func select() -> Selection? {
+    enum Outcome {
+        /// The word is selected.
+        case selected(Selection)
+        /// The field's text was read and there is no word before the caret. Final: do not fall
+        /// back to ⇧←, which in right-to-left text would select the text after the caret.
+        case noWord
+        /// The app does not expose its text, caret or selection setting: the caller may use ⇧←.
+        case unsupported
+    }
+
+    static func select() -> Outcome {
         let system = AXUIElementCreateSystemWide()
         guard let element: AXUIElement = copy(system, kAXFocusedUIElementAttribute),
               let text: String = copy(element, kAXValueAttribute),
-              let rangeValue: AXValue = copy(element, kAXSelectedTextRangeAttribute) else { return nil }
+              let rangeValue: AXValue = copy(element, kAXSelectedTextRangeAttribute) else { return .unsupported }
         var caret = CFRange()
-        guard AXValueGetValue(rangeValue, .cfRange, &caret), caret.length == 0,
-              let word = WordWalk.wordBefore(caret: caret.location, in: text) else { return nil }
+        guard AXValueGetValue(rangeValue, .cfRange, &caret), caret.length == 0 else { return .unsupported }
+        guard let word = WordWalk.wordBefore(caret: caret.location, in: text) else { return .noWord }
 
-        guard setRange(element, CFRange(location: word.location, length: word.length)) else { return nil }
+        guard setRange(element, CFRange(location: word.location, length: word.length)) else { return .unsupported }
         let original = caret
-        return Selection(expected: (text as NSString).substring(with: word),
-                         restore: { _ = setRange(element, original) })
+        return .selected(Selection(expected: (text as NSString).substring(with: word),
+                                   restore: { _ = setRange(element, original) }))
     }
 
     private static func copy<T>(_ element: AXUIElement, _ attribute: String) -> T? {

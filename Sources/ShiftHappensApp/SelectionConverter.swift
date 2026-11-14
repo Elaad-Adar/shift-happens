@@ -124,11 +124,16 @@ final class SelectionConverter {
     /// order, right for Hebrew); if the app does not expose its text, or the copy does not match, with
     /// ⇧← steps. Nil when there is no word; the caret is then where it was.
     private func selectWordBeforeCursor(_ pb: NSPasteboard) async -> AutoSelection? {
-        if let ax = AXWord.select() {
+        switch AXWord.select() {
+        case .selected(let ax):
             if let copied = await copySelection(pb, timeout: 0.5), copied == ax.expected {
                 return AutoSelection(text: copied, restore: ax.restore)
             }
-            ax.restore()
+            ax.restore()  // the app did not really select it: try the key walk
+        case .noWord:
+            return nil
+        case .unsupported:
+            break
         }
         guard let text = await walkWithKeys(pb) else { return nil }
         return AutoSelection(text: text, restore: { Keys.press(UInt16(kVK_RightArrow), flags: []) })

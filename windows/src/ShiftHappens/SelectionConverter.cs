@@ -151,11 +151,13 @@ sealed class SelectionConverter
     /// with Shift+Left steps. Null when there is no word; the caret is then where it was.</summary>
     static async Task<AutoSelection?> SelectWordBeforeCursor()
     {
-        if (UiaWord.Select() is { } uia)
+        var outcome = UiaWord.Select();
+        if (outcome.Kind == UiaWord.Kind.NoWord) return null;
+        if (outcome.Selection is { } uia)
         {
             if (await CopySelection(500) is { } copied && Lines(copied) == Lines(uia.Expected))
                 return new AutoSelection(copied, uia.Restore);
-            uia.Restore();
+            uia.Restore();  // the control did not really select it: try the key walk
         }
         return await WalkWithKeys() is { } text
             ? new AutoSelection(text, () => Native.Arrow(Native.VK_RIGHT, shift: false))
