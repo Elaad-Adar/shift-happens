@@ -160,8 +160,9 @@ Approve it in the pop-up, then restart it: `pkill ShiftHappens; open "/Applicati
 5. A 4+ letter word that clearly reads right the other way goes against its group (`hello akuo` →
    `hello שלום`).
 
-Known limits: code editors that copy the whole line when nothing is selected (VS Code, JetBrains) are seen
-as "something selected", so select the word yourself there; apps where Shift+Left does not select (terminals)
+Known limits: VS Code's whole-line copy of an empty selection is recognised (it marks it in the clipboard),
+but editors that copy the line without a mark (JetBrains) look like a selection, so select the word yourself
+there; apps where Shift+Left does not select (terminals)
 just beep; 1–3 letter words in mixed-language text follow their group; apps that block synthetic
 copy/paste (some password fields, remote desktops) are not supported; clipboard managers see the
 temporary clipboard content.

@@ -116,13 +116,35 @@ sealed class SelectionConverter
         Native.CtrlChord((ushort)Keys.C);
         if (!await WaitFor(() => Native.GetClipboardSequenceNumber() != before, timeoutMs)) return null;
         var s = Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "");
-        return s.Length > 0 ? s : null;
+        if (s.Length == 0 || IsEditorLineCopy()) return null;
+        return s;
     }
 
     /// <summary>A selection this app made, and how to undo it (caret back where it was).</summary>
     sealed record AutoSelection(string Text, Action Restore);
 
     static string Lines(string s) => s.Replace("\r\n", "\n");
+
+    /// <summary>An editor's whole-line copy of an empty selection (VS Code marks it in Chromium's custom
+    /// clipboard data): counts as "nothing selected".</summary>
+    static bool IsEditorLineCopy()
+    {
+        try
+        {
+            var data = Retry(() => Clipboard.GetData(LineCopy.WindowsClipboardFormat));
+            var bytes = data switch
+            {
+                MemoryStream ms => ms.ToArray(),
+                byte[] b => b,
+                _ => null,
+            };
+            return bytes is not null && LineCopy.IsFromEmptySelection(bytes);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Nothing selected: select the word just before the cursor. First through UI Automation
     /// (logical order, right for Hebrew); if the control has no text pattern, or the copy does not match,

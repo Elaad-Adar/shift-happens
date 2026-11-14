@@ -102,13 +102,15 @@ final class SelectionConverter {
         return parts.joined(separator: ", ").capitalizedFirst
     }
 
-    /// ⌘C, then the copied text, or nil when the clipboard did not change in time (nothing selected)
-    /// or holds no text.
+    /// ⌘C, then the copied text, or nil when nothing was selected: the clipboard did not change in
+    /// time, holds no text, or holds an editor's whole-line copy of an empty selection (VS Code).
     private func copySelection(_ pb: NSPasteboard, timeout: TimeInterval) async -> String? {
         let before = pb.changeCount
         Keys.press(UInt16(kVK_ANSI_C), flags: .maskCommand)
         guard await waitFor({ pb.changeCount != before }, timeout: timeout),
               let s = pb.string(forType: .string), !s.isEmpty else { return nil }
+        if let custom = pb.data(forType: NSPasteboard.PasteboardType(LineCopy.macPasteboardType)),
+           LineCopy.isFromEmptySelection(custom) { return nil }
         return s
     }
 
