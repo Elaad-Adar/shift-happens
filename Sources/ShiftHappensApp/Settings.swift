@@ -82,6 +82,12 @@ final class Settings {
         set { defaults.set(newValue, forKey: "fixWordBeforeCursor") }
     }
 
+    /// Ask GitHub once a day whether a newer release exists.
+    var checkForUpdates: Bool {
+        get { defaults.object(forKey: "checkForUpdates") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "checkForUpdates") }
+    }
+
     /// Switch the active keyboard to the language of the swapped text.
     var switchLayoutAfterSwap: Bool {
         get { defaults.object(forKey: "switchLayoutAfterSwap") as? Bool ?? true }

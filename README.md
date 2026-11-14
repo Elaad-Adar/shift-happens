@@ -122,10 +122,13 @@ the Mac layout table, so a change to the decision logic goes into both.
 
 ## Updating to a new release
 
-There is no automatic update yet. The version you have is shown in the menu-bar menu (Mac) or the
-tray menu (Windows): "Shift Happens 1.2.0". The latest is on the
-[Releases page](https://github.com/Elaad-Adar/shift-happens/releases/latest). Updating installs the new
-release over the old one; your settings (hotkeys, options) are kept.
+The app checks GitHub once a day (setting "Check for updates once a day", on by default) and, when a
+newer release exists, shows **Update to X.Y.Z…** at the top of its menu and a **Download** button in
+Settings. Both open the release page; the app does not replace itself (it is not code-signed). The check
+only calls GitHub's public `releases/latest` API and sends nothing about you.
+
+The version you have is shown at the top of Settings and at the bottom of the menu. Updating installs
+the new release over the old one; your settings (hotkeys, options) are kept.
 
 ### Mac
 
@@ -177,6 +180,12 @@ Start-Process "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
 Without `gh`: right-click the tray icon → **Quit**, download the `-windows.zip` from the Releases page,
 unzip it over the old `ShiftHappens.exe` (replace), and start it. "Start with Windows" keeps working
 because the exe stays in the same place.
+
+## Found a bug or have an idea?
+
+In the app's menu (or Settings): **Report a Problem…** or **Suggest an Idea…**. It opens a short form on
+GitHub, in Hebrew and English, with the app version and your computer already filled in. You need a free
+GitHub account to send it. No account? Send it to Elaad on WhatsApp and he files it.
 
 ## Release a new version
 

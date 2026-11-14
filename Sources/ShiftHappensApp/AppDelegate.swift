@@ -45,6 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         if !AXIsProcessTrusted() { askForAccessibility() }
+
+        UpdateChecker.shared.start()
     }
 
     // MARK: Hotkeys
@@ -81,6 +83,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
         let s = Settings.shared
 
+        if let update = UpdateChecker.shared.available {
+            let item = NSMenuItem(title: "Update to \(update.version)…", action: #selector(openUpdate), keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+            menu.addItem(.separator())
+        }
+
         let convert = NSMenuItem(title: "Fix selection" + suffix(s.convertShortcut),
                                  action: #selector(menuConvert), keyEquivalent: "")
         convert.target = self
@@ -107,8 +116,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
-        let about = NSMenuItem(title: "Shift Happens \(version)", action: nil, keyEquivalent: "")
+        let check = NSMenuItem(title: "Check for Updates…", action: #selector(checkUpdates), keyEquivalent: "")
+        check.target = self
+        menu.addItem(check)
+        let bug = NSMenuItem(title: "Report a Problem…", action: #selector(reportBug), keyEquivalent: "")
+        bug.target = self
+        menu.addItem(bug)
+        let idea = NSMenuItem(title: "Suggest an Idea…", action: #selector(suggestIdea), keyEquivalent: "")
+        idea.target = self
+        menu.addItem(idea)
+        menu.addItem(.separator())
+        let about = NSMenuItem(title: "Shift Happens \(AppInfo.version)", action: nil, keyEquivalent: "")
         about.isEnabled = false
         menu.addItem(about)
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -119,6 +137,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // The menu closes before the action runs, so focus is back in the user's app when ⌘C goes out.
     @objc private func menuConvert() { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.convert(.smart) } }
     @objc private func menuForce() { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.convert(.forceSwap) } }
+
+    @objc private func openUpdate() {
+        if let update = UpdateChecker.shared.available { NSWorkspace.shared.open(update.url) }
+    }
+
+    /// Checks now and opens Settings, where the result is shown next to the version.
+    @objc private func checkUpdates() {
+        openSettings()
+        Task { await UpdateChecker.shared.check() }
+    }
+
+    @objc private func reportBug() { AppInfo.openIssue(.bug) }
+    @objc private func suggestIdea() { AppInfo.openIssue(.idea) }
 
     @objc func openSettings() {
         if settingsWindow == nil { settingsWindow = SettingsWindowController(app: self) }

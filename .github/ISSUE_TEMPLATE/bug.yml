@@ -1,0 +1,45 @@
+name: "Report a problem / דיווח על תקלה"
+description: "Something did not work as expected / משהו לא עבד כמו שצריך"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Write in Hebrew or English.
+        תודה על הדיווח! אפשר לכתוב בעברית או באנגלית.
+  - type: textarea
+    id: typed
+    attributes:
+      label: "What did you type or select? / מה כתבת או סימנת?"
+      description: "Copy the text if you can. / אם אפשר, להעתיק את הטקסט."
+      placeholder: "akuo"
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: "What happened? / מה קרה?"
+      placeholder: "Nothing changed / the text became ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "What did you expect? / מה ציפית שיקרה?"
+      placeholder: "שלום"
+  - type: input
+    id: app
+    attributes:
+      label: "In which app were you typing? / באיזו תוכנה הקלדת?"
+      placeholder: "WhatsApp, Word, Chrome, Notepad ..."
+  - type: input
+    id: version
+    attributes:
+      label: "Shift Happens version / גרסה"
+      description: "Filled in by the app. / ממולא אוטומטית."
+  - type: input
+    id: os
+    attributes:
+      label: "Computer / מחשב"
+      description: "Filled in by the app. / ממולא אוטומטית."
