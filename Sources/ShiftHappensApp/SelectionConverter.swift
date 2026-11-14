@@ -57,8 +57,10 @@ final class SelectionConverter {
             let saved = PasteboardSnapshot(pb)
 
             var text = await copySelection(pb, timeout: 0.5)
+            var autoSelected = false
             if text == nil, Settings.shared.fixWordBeforeCursor {
                 text = await selectWordBeforeCursor(pb)
+                autoSelected = text != nil
             }
             guard let text else {
                 saved.restore(pb)
@@ -69,6 +71,8 @@ final class SelectionConverter {
 
             let result = converter.convert(text, mode: mode)
             guard result.changed else {
+                // Put the cursor back where it was instead of leaving our selection behind.
+                if autoSelected { Keys.press(UInt16(kVK_RightArrow), flags: []) }
                 saved.restore(pb)
                 lastStatus = "Looks right already"
                 return
@@ -109,26 +113,39 @@ final class SelectionConverter {
     }
 
     /// Nothing selected: select the word just before the cursor with ⇧← steps (see WordWalk) and
-    /// return it, or nil (cursor put back where it was) when there is none.
+    /// return it, or nil when there is none. On nil the cursor is where it was: a selection this made
+    /// is collapsed back to its right end, and nothing is pressed when no selection was made.
     private func selectWordBeforeCursor(_ pb: NSPasteboard) async -> String? {
         var walk = WordWalk()
         var last = ""
         steps: for _ in 0..<(walk.maxCharacters * 2 + 4) {
             Keys.press(UInt16(kVK_LeftArrow), flags: .maskShift)
-            let selection = await copySelection(pb, timeout: 0.25) ?? last
+            guard let selection = await copyStep(pb, hadSelection: !last.isEmpty) else { break steps }
             switch walk.next(selection) {
             case .extend:
                 last = selection
             case .done(let shrink):
                 guard shrink else { return selection }
                 Keys.press(UInt16(kVK_RightArrow), flags: .maskShift)
-                return await copySelection(pb, timeout: 0.25)
+                if let final = await copySelection(pb, timeout: 0.5) { return final }
+                last = selection
+                break steps
             case .fail:
+                if !selection.isEmpty { last = selection }
                 break steps
             }
         }
-        Keys.press(UInt16(kVK_RightArrow), flags: [])  // collapse the selection back to the cursor
+        if !last.isEmpty { Keys.press(UInt16(kVK_RightArrow), flags: []) }
         return nil
+    }
+
+    /// One copy during the walk, retried once for slow apps. With nothing selected yet, still no
+    /// clipboard change means an empty selection (start of the field): "". With a selection already
+    /// made, it is nil (abort) rather than a guess that the field boundary was reached.
+    private func copyStep(_ pb: NSPasteboard, hadSelection: Bool) async -> String? {
+        if let s = await copySelection(pb, timeout: 0.25) { return s }
+        if let s = await copySelection(pb, timeout: 0.75) { return s }
+        return hadSelection ? nil : ""
     }
 
     /// The hotkey's own modifiers are still down when it fires. False if they are still held after 1.5 s.

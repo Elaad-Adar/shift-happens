@@ -60,7 +60,12 @@ sealed class SelectionConverter
 
             var saved = ClipboardSnapshot.Take();
             var text = await CopySelection(500);
-            if (text is null && _settings.FixWordBeforeCursor) text = await SelectWordBeforeCursor();
+            bool autoSelected = false;
+            if (text is null && _settings.FixWordBeforeCursor)
+            {
+                text = await SelectWordBeforeCursor();
+                autoSelected = text is not null;
+            }
             if (text is null)
             {
                 saved.Restore();
@@ -72,6 +77,8 @@ sealed class SelectionConverter
             var result = _converter.Convert(text, mode);
             if (!result.Changed)
             {
+                // Put the cursor back where it was instead of leaving our selection behind.
+                if (autoSelected) Native.Arrow(Native.VK_RIGHT, shift: false);
                 saved.Restore();
                 LastStatus = "Looks right already";
                 return;
@@ -113,7 +120,8 @@ sealed class SelectionConverter
     }
 
     /// <summary>Nothing selected: select the word just before the cursor with Shift+Left steps (see
-    /// WordWalk) and return it, or null (cursor put back) when there is none.</summary>
+    /// WordWalk) and return it, or null when there is none. On null the cursor is where it was: a
+    /// selection this made is collapsed back to its right end, and nothing is pressed when none was made.</summary>
     static async Task<string?> SelectWordBeforeCursor()
     {
         var walk = new WordWalk();
@@ -121,22 +129,35 @@ sealed class SelectionConverter
         for (int i = 0; i < walk.MaxCharacters * 2 + 4; i++)
         {
             Native.Arrow(Native.VK_LEFT, shift: true);
-            var selection = await CopySelection(250) ?? last;
-            switch (walk.Next(selection))
+            var selection = await CopyStep(hadSelection: last.Length > 0);
+            if (selection is null) break;
+            var step = walk.Next(selection);
+            if (step == WordWalk.Step.Extend)
             {
-                case WordWalk.Step.Extend:
-                    last = selection;
-                    continue;
-                case WordWalk.Step.Done:
-                    return selection;
-                case WordWalk.Step.DoneShrink:
-                    Native.Arrow(Native.VK_RIGHT, shift: true);
-                    return await CopySelection(250);
+                last = selection;
+                continue;
             }
-            break;  // Fail
+            if (step == WordWalk.Step.Done) return selection;
+            if (step == WordWalk.Step.DoneShrink)
+            {
+                Native.Arrow(Native.VK_RIGHT, shift: true);
+                if (await CopySelection(500) is { } final) return final;
+            }
+            if (selection.Length > 0) last = selection;
+            break;  // Fail, or the final copy failed
         }
-        Native.Arrow(Native.VK_RIGHT, shift: false);  // collapse the selection back to the cursor
+        if (last.Length > 0) Native.Arrow(Native.VK_RIGHT, shift: false);
         return null;
+    }
+
+    /// <summary>One copy during the walk, retried once for slow apps. With nothing selected yet, still no
+    /// clipboard change means an empty selection (start of the field): "". With a selection already made,
+    /// it is null (abort) rather than a guess that the field boundary was reached.</summary>
+    static async Task<string?> CopyStep(bool hadSelection)
+    {
+        if (await CopySelection(250) is { } s) return s;
+        if (await CopySelection(750) is { } t) return t;
+        return hadSelection ? null : "";
     }
 
     static string Describe(Conversion r)
