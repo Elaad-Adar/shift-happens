@@ -118,6 +118,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         loginBox.state = (app?.launchAtLogin ?? false) ? .on : .off
     }
 
+    func windowDidResignKey(_ notification: Notification) {
+        convertRecorder.cancel()
+        forceRecorder.cancel()
+    }
+
     func windowWillClose(_ notification: Notification) {
         convertRecorder.cancel()
         forceRecorder.cancel()

@@ -43,7 +43,12 @@ final class SelectionConverter {
         busy = true
         Task { @MainActor in
             defer { busy = false }
-            await waitForModifiersReleased()
+            // Sending ⌘C while the hotkey's keys are still down would arrive as e.g. ⌃⇧⌘C.
+            guard await waitForModifiersReleased() else {
+                lastStatus = "Release the hotkey keys to convert"
+                NSSound.beep()
+                return
+            }
             // The spell service goes idle and cold again; cold answers read as "correct".
             // About 1 ms when it is already warm.
             spell.warmUp()
@@ -92,10 +97,10 @@ final class SelectionConverter {
         return parts.joined(separator: ", ").capitalizedFirst
     }
 
-    /// The hotkey's own modifiers are still down when it fires; ⌘C sent now would arrive as ⌃⇧⌘C.
-    private func waitForModifiersReleased() async {
+    /// The hotkey's own modifiers are still down when it fires. False if they are still held after 1.5 s.
+    private func waitForModifiersReleased() async -> Bool {
         let mask: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate, .maskShift]
-        _ = await waitFor({ CGEventSource.flagsState(.combinedSessionState).intersection(mask).isEmpty }, timeout: 1.5)
+        return await waitFor({ CGEventSource.flagsState(.combinedSessionState).intersection(mask).isEmpty }, timeout: 1.5)
     }
 
     private func waitFor(_ condition: () -> Bool, timeout: TimeInterval) async -> Bool {

@@ -51,7 +51,12 @@ sealed class SelectionConverter
         try
         {
             // The hotkey's own Ctrl/Alt are still down; Ctrl+C sent now would arrive as Ctrl+Alt+C.
-            await WaitFor(() => !Native.AnyModifierDown(), 1500);
+            if (!await WaitFor(() => !Native.AnyModifierDown(), 1500))
+            {
+                LastStatus = "Release the hotkey keys to convert";
+                SystemSounds.Beep.Play();
+                return;
+            }
 
             var saved = ClipboardSnapshot.Take();
             uint before = Native.GetClipboardSequenceNumber();

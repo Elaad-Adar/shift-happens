@@ -32,6 +32,10 @@ sealed class SettingsForm : Form
             box.Enter += (_, _) => _app.PauseHotKeys();
             box.Leave += (_, _) => Save();
         }
+        // Leave does not fire when the whole window loses focus, so re-register here too,
+        // and pause again if the user comes back into a hotkey box.
+        Deactivate += (_, _) => Save();
+        Activated += (_, _) => { if (ActiveControl is HotkeyBox) _app.PauseHotKeys(); };
 
         var clearForce = new Button { Text = "Clear", AutoSize = true };
         clearForce.Click += (_, _) => { _forceBox.Shortcut = null; Save(); };
