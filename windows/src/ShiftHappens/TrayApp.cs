@@ -17,6 +17,7 @@ sealed class TrayApp : ApplicationContext
 
     public List<string> HotkeyProblems { get; } = new();
     public Settings Settings => _settings;
+    public UpdateChecker Updates { get; }
 
     public static Icon AppIcon()
     {
@@ -27,6 +28,7 @@ sealed class TrayApp : ApplicationContext
     public TrayApp()
     {
         _selection = new SelectionConverter(_settings);
+        Updates = new UpdateChecker(_settings);
         _tray = new NotifyIcon
         {
             Icon = AppIcon(),
@@ -38,6 +40,7 @@ sealed class TrayApp : ApplicationContext
         _tray.MouseDoubleClick += (_, _) => OpenSettings();
 
         RegisterHotKeys();
+        Updates.Start();
 
         // Keyboards added or removed in Windows settings.
         SystemEvents.UserPreferenceChanged += OnPreferenceChanged;
@@ -79,6 +82,11 @@ sealed class TrayApp : ApplicationContext
     void BuildMenu(ContextMenuStrip menu)
     {
         menu.Items.Clear();
+        if (Updates.Available is { } update)
+        {
+            menu.Items.Add($"Update to {update.Version}…", null, (_, _) => AppInfo.Open(update.Url));
+            menu.Items.Add(new ToolStripSeparator());
+        }
         menu.Items.Add(new ToolStripMenuItem("Fix selection", null, (_, _) => RunFromMenu(Mode.Smart))
         {
             ShortcutKeyDisplayString = _settings.ConvertShortcut?.Display,
@@ -96,8 +104,11 @@ sealed class TrayApp : ApplicationContext
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Settings…", null, (_, _) => OpenSettings());
-        var version = Application.ProductVersion.Split('+')[0];
-        menu.Items.Add(new ToolStripMenuItem($"Shift Happens {version}") { Enabled = false });
+        menu.Items.Add("Check for updates…", null, (_, _) => { OpenSettings(); _ = Updates.CheckAsync(); });
+        menu.Items.Add("Report a problem…", null, (_, _) => AppInfo.OpenIssue(Releases.IssueKind.Bug));
+        menu.Items.Add("Suggest an idea…", null, (_, _) => AppInfo.OpenIssue(Releases.IssueKind.Idea));
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem($"Shift Happens {AppInfo.Version}") { Enabled = false });
         menu.Items.Add("Quit", null, (_, _) => Quit());
     }
 

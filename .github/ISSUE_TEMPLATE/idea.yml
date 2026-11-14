@@ -1,0 +1,25 @@
+name: "Suggest an idea / הצעה לשיפור"
+description: "Something you would like Shift Happens to do / משהו שהיית רוצה שהאפליקציה תעשה"
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: "What would you like it to do? / מה היית רוצה שהיא תעשה?"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: "Why, or when would it help? / למה, או מתי זה יעזור?"
+  - type: input
+    id: version
+    attributes:
+      label: "Shift Happens version / גרסה"
+      description: "Filled in by the app. / ממולא אוטומטית."
+  - type: input
+    id: os
+    attributes:
+      label: "Computer / מחשב"
+      description: "Filled in by the app. / ממולא אוטומטית."

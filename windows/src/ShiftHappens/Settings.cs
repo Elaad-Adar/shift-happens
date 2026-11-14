@@ -51,6 +51,9 @@ sealed class Settings
     /// <summary>With nothing selected, select and fix the word just before the cursor.</summary>
     public bool FixWordBeforeCursor { get; set; } = true;
     public bool WelcomeShown { get; set; }
+    /// <summary>Ask GitHub once a day whether a newer release exists.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+    public DateTime? LastUpdateCheck { get; set; }
 
     static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ShiftHappens");
     static string FilePath => Path.Combine(Dir, "settings.json");

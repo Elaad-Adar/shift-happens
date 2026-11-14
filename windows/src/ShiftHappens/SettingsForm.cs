@@ -1,3 +1,5 @@
+using ShiftCore;
+
 namespace ShiftHappens;
 
 /// <summary>Settings: the two hotkeys, keyboard switching, start with Windows.</summary>
@@ -9,6 +11,9 @@ sealed class SettingsForm : Form
     readonly CheckBox _wordBox = new() { Text = "With nothing selected, fix the word before the cursor", AutoSize = true };
     readonly CheckBox _switchBox = new() { Text = "Switch keyboard to the new language after a swap", AutoSize = true };
     readonly CheckBox _startupBox = new() { Text = "Start with Windows", AutoSize = true };
+    readonly CheckBox _updatesBox = new() { Text = "Check for updates once a day", AutoSize = true };
+    readonly Label _updateStatus = new() { AutoSize = true, ForeColor = SystemColors.GrayText };
+    readonly Button _updateButton = new() { Text = "Check now", AutoSize = true };
     readonly Label _status = new() { AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(420, 0) };
 
     public SettingsForm(TrayApp app)
@@ -80,7 +85,45 @@ sealed class SettingsForm : Form
             WrapContents = false,
             Dock = DockStyle.Fill,
         };
-        stack.Controls.AddRange(new Control[] { grid, help, _wordBox, _switchBox, _startupBox, _status });
+        _updatesBox.Checked = s.CheckForUpdates;
+        _updatesBox.CheckedChanged += (_, _) =>
+        {
+            s.CheckForUpdates = _updatesBox.Checked;
+            s.Save();
+            if (_updatesBox.Checked) _app.Updates.CheckIfDue();
+        };
+
+        var versionLabel = new Label
+        {
+            Text = $"Shift Happens {AppInfo.Version}",
+            AutoSize = true,
+            Font = new Font(Font, FontStyle.Bold),
+            Anchor = AnchorStyles.Left,
+        };
+        var notes = new LinkLabel { Text = "Release notes", AutoSize = true, Anchor = AnchorStyles.Left };
+        notes.LinkClicked += (_, _) => AppInfo.Open(Releases.NotesUrl(AppInfo.Version));
+        _updateButton.Click += (_, _) =>
+        {
+            if (_app.Updates.Available is { } update) AppInfo.Open(update.Url);
+            else _ = _app.Updates.CheckAsync();
+        };
+        var versionRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        versionRow.Controls.AddRange(new Control[] { versionLabel, notes, _updateButton });
+
+        var report = new Button { Text = "Report a problem…", AutoSize = true };
+        report.Click += (_, _) => AppInfo.OpenIssue(Releases.IssueKind.Bug);
+        var idea = new Button { Text = "Suggest an idea…", AutoSize = true };
+        idea.Click += (_, _) => AppInfo.OpenIssue(Releases.IssueKind.Idea);
+        var feedbackRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        feedbackRow.Controls.AddRange(new Control[] { report, idea });
+
+        _app.Updates.Changed += RefreshUpdate;
+        RefreshUpdate();
+
+        stack.Controls.AddRange(new Control[]
+        {
+            versionRow, _updateStatus, grid, help, _wordBox, _switchBox, _startupBox, _updatesBox, feedbackRow, _status,
+        });
         Controls.Add(stack);
         RefreshStatus();
     }
@@ -95,7 +138,28 @@ sealed class SettingsForm : Form
         RefreshStatus();
     }
 
+    void RefreshUpdate()
+    {
+        if (IsDisposed) return;
+        if (_app.Updates.Available is { } update)
+        {
+            _updateButton.Text = $"Download {update.Version}…";
+            _updateStatus.Text = $"Version {update.Version} is available.";
+        }
+        else
+        {
+            _updateButton.Text = "Check now";
+            _updateStatus.Text = _app.Updates.Status;
+        }
+    }
+
     void RefreshStatus() => _status.Text = string.Join(Environment.NewLine, _app.HotkeyProblems);
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        _app.Updates.Changed -= RefreshUpdate;
+        base.OnFormClosed(e);
+    }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {

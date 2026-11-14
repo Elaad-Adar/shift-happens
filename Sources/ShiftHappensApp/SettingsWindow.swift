@@ -1,4 +1,5 @@
 import AppKit
+import ShiftCore
 
 /// Settings: the two hotkeys, keyboard switching, launch at login.
 @MainActor
@@ -9,6 +10,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let switchBox = NSButton(checkboxWithTitle: "Switch keyboard to the new language after a swap", target: nil, action: nil)
     private let wordBox = NSButton(checkboxWithTitle: "With nothing selected, fix the word before the cursor", target: nil, action: nil)
     private let loginBox = NSButton(checkboxWithTitle: "Open at login", target: nil, action: nil)
+    private let updatesBox = NSButton(checkboxWithTitle: "Check for updates once a day", target: nil, action: nil)
+    private let versionLabel = NSTextField(labelWithString: "Shift Happens \(AppInfo.version)")
+    private let updateStatus = NSTextField(labelWithString: "")
+    private let updateButton = NSButton(title: "Check Now", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
 
     init(app: AppDelegate) {
@@ -64,7 +69,30 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         convertRecorder.widthAnchor.constraint(equalToConstant: 170).isActive = true
         forceRecorder.widthAnchor.constraint(equalToConstant: 170).isActive = true
 
-        let stack = NSStackView(views: [grid, help, wordBox, switchBox, loginBox, status])
+        updatesBox.target = self
+        updatesBox.action = #selector(toggleUpdates)
+        updatesBox.state = s.checkForUpdates ? .on : .off
+
+        versionLabel.font = .boldSystemFont(ofSize: NSFont.systemFontSize)
+        let notes = NSButton(title: "Release notes", target: self, action: #selector(openNotes))
+        notes.bezelStyle = .inline
+        updateButton.target = self
+        updateButton.action = #selector(checkNow)
+        updateButton.bezelStyle = .rounded
+        updateStatus.textColor = .secondaryLabelColor
+        updateStatus.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        let versionRow = NSStackView(views: [versionLabel, notes, updateButton])
+        versionRow.spacing = 8
+
+        let report = NSButton(title: "Report a Problem…", target: self, action: #selector(reportBug))
+        report.bezelStyle = .rounded
+        let idea = NSButton(title: "Suggest an Idea…", target: self, action: #selector(suggestIdea))
+        idea.bezelStyle = .rounded
+        let feedbackRow = NSStackView(views: [report, idea])
+        feedbackRow.spacing = 8
+
+        let stack = NSStackView(views: [versionRow, updateStatus, grid, help, wordBox, switchBox, loginBox,
+                                        updatesBox, feedbackRow, status])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 12
@@ -85,7 +113,37 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         refreshStatus()
     }
 
+    private func refreshUpdate() {
+        let checker = UpdateChecker.shared
+        if let update = checker.available {
+            updateButton.title = "Download \(update.version)…"
+            updateStatus.stringValue = "Version \(update.version) is available."
+        } else {
+            updateButton.title = "Check Now"
+            updateStatus.stringValue = checker.status
+        }
+    }
+
+    @objc private func checkNow() {
+        if let update = UpdateChecker.shared.available {
+            NSWorkspace.shared.open(update.url)
+            return
+        }
+        Task { await UpdateChecker.shared.check() }
+    }
+
+    @objc private func openNotes() { NSWorkspace.shared.open(Releases.notesURL(version: AppInfo.version)) }
+    @objc private func reportBug() { AppInfo.openIssue(.bug) }
+    @objc private func suggestIdea() { AppInfo.openIssue(.idea) }
+
+    @objc private func toggleUpdates() {
+        Settings.shared.checkForUpdates = updatesBox.state == .on
+        if updatesBox.state == .on { UpdateChecker.shared.checkIfDue() }
+    }
+
     func show() {
+        UpdateChecker.shared.onChange = { [weak self] in self?.refreshUpdate() }
+        refreshUpdate()
         loginBox.state = (app?.launchAtLogin ?? false) ? .on : .off
         refreshStatus()
         window?.center()
