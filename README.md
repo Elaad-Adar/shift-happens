@@ -23,7 +23,7 @@ uses it for "next input source". Undo with `⌘Z` in the app you typed in.
 ## Install from a release (macOS 13+, Apple Silicon and Intel)
 
 ```bash
-gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --dir /tmp/shift-happens --clobber && ditto -x -k /tmp/shift-happens/*-mac.zip /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app" && open "/Applications/Shift Happens.app"
+D="$(mktemp -d)" && gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --output "$D/shift-happens-mac.zip" && pkill ShiftHappens; ditto -x -k "$D/shift-happens-mac.zip" /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app" && open "/Applications/Shift Happens.app"
 ```
 
 Approve it under System Settings → Privacy & Security → **Accessibility** (once per new version; if an old
