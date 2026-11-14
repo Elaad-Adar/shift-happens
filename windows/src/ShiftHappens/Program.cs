@@ -6,7 +6,7 @@ namespace ShiftHappens;
 static class Program
 {
     // Command-line modes (run from PowerShell; output goes to that console):
-    //   ShiftHappens.exe --dump-layout            print the layout table as JSON
+    //   ShiftHappens.exe --dump-layout [file]     layout table as JSON (UTF-8 file, or printed)
     //   ShiftHappens.exe --convert "text" [--force] [--verbose]
     //   ShiftHappens.exe --spell word en|he      one spell check with suggestions
     [STAThread]
@@ -35,7 +35,17 @@ static class Program
         {
             if (args[0] == "--dump-layout")
             {
-                Console.WriteLine(WinLayouts.Table(WinLayouts.FindPair()).ToJson());
+                var json = WinLayouts.Table(WinLayouts.FindPair()).ToJson();
+                // A file path avoids PowerShell 5.1's ">" (UTF-16, and it does not wait for a GUI exe).
+                if (args.Length > 1)
+                {
+                    File.WriteAllText(args[1], json + "\n", new UTF8Encoding(false));
+                    Console.WriteLine("wrote " + Path.GetFullPath(args[1]));
+                }
+                else
+                {
+                    Console.WriteLine(json);
+                }
                 return 0;
             }
             if (args[0] == "--convert" && args.Length > 1)
@@ -59,7 +69,7 @@ static class Program
                 Console.WriteLine($"  spell checkers: en {(spell.HasEnglish ? "yes" : "no")}, he {(spell.HasHebrew ? "yes" : "no")}");
                 return 0;
             }
-            Console.Error.WriteLine("usage: --dump-layout | --convert \"text\" [--force] [--verbose] | --spell word en|he");
+            Console.Error.WriteLine("usage: --dump-layout [file] | --convert \"text\" [--force] [--verbose] | --spell word en|he");
             return 2;
         }
         catch (Exception e)
