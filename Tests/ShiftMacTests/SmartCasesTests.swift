@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Testing
 import ShiftCore
@@ -35,7 +34,9 @@ func loadCases() -> [SmartCase] {
         try MacLayouts.pair(latinID: "com.apple.keylayout.ABC", hebrewID: "com.apple.keylayout.Hebrew")
     }
 
-    static let hasHebrewSpelling = NSSpellChecker.shared.availableLanguages.contains("he")
+    /// False on machines whose spell checker does not catch a sure misspelling in both languages
+    /// (GitHub's macOS runners list Hebrew but have no working Hebrew dictionary).
+    static let spellingWorks = spell.warmUp()
 
     @Test func liveLayoutMatchesFixture() throws {
         let live = MacLayouts.table(try Self.pair())
@@ -43,7 +44,7 @@ func loadCases() -> [SmartCase] {
         #expect(live == fixture, "Layouts changed: run `shift-happens --dump-layout > fixtures/mac-abc-hebrew.json`")
     }
 
-    @Test(.enabled(if: hasHebrewSpelling, "no Hebrew spell checker on this Mac"), arguments: loadCases())
+    @Test(.enabled(if: spellingWorks, "spell checker does not work for English and Hebrew here"), arguments: loadCases())
     func smartCase(_ c: SmartCase) throws {
         let converter = Converter(table: MacLayouts.table(try Self.pair()), spell: Self.spell)
         let result = converter.convert(c.in, mode: c.mode == "force" ? .forceSwap : .smart)

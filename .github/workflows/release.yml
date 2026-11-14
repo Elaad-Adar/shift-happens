@@ -1,6 +1,6 @@
 name: release
 
-# Push a tag like v1.0.1 to build the app and publish a GitHub Release with the zip(s).
+# Push a tag like v1.1.0 to build both apps and publish a GitHub Release with a Mac zip and a Windows zip.
 on:
   push:
     tags: ["v*"]
@@ -12,7 +12,7 @@ jobs:
   mac:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Test
         run: scripts/test.sh
@@ -25,16 +25,43 @@ jobs:
           mkdir -p dist
           ditto -c -k --keepParent "build/Shift Happens.app" "dist/Shift-Happens-${GITHUB_REF_NAME#v}-mac.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mac
           path: dist/*.zip
 
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test windows/tests/ShiftCore.Tests -c Release
+
+      - name: Publish and zip
+        shell: pwsh
+        run: |
+          $v = $env:GITHUB_REF_NAME.TrimStart('v')
+          dotnet publish windows/src/ShiftHappens -c Release -r win-x64 --self-contained `
+            -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:Version=$v -o out
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path out/ShiftHappens.exe -DestinationPath "dist/Shift-Happens-$v-windows.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: dist/*.zip
+
   release:
-    needs: [mac]
+    needs: [mac, windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true

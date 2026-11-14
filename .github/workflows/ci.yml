@@ -1,0 +1,33 @@
+name: ci
+
+# Tests on every PR and on main: the Swift app and tests on macOS, the C# core tests and
+# a compile of the Windows app on Linux.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test
+        run: scripts/test.sh
+      - name: Build app
+        run: scripts/build-app.sh
+
+  windows-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+      - name: Test core
+        run: dotnet test windows/tests/ShiftCore.Tests -c Release
+      - name: Build Windows app
+        run: dotnet build windows/src/ShiftHappens -c Release
