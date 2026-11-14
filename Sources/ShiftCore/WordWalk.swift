@@ -47,3 +47,29 @@ public struct WordWalk {
         return selection.count > maxCharacters ? .fail : .extend
     }
 }
+
+extension WordWalk {
+    /// The word just before `caret` in `text`, as a UTF-16 range (what Accessibility APIs use), found
+    /// with the same steps as the key walk but over the text in logical order, so right-to-left text
+    /// works too. Steps never split a composed character (emoji, Hebrew with niqqud).
+    public static func wordBefore(caret: Int, in text: String, maxCharacters: Int = 40) -> NSRange? {
+        let ns = text as NSString
+        guard caret >= 0, caret <= ns.length else { return nil }
+        var walk = WordWalk(maxCharacters: maxCharacters)
+        var start = caret
+        for _ in 0..<(maxCharacters * 2 + 4) {
+            if start > 0 { start = ns.rangeOfComposedCharacterSequence(at: start - 1).location }
+            let selection = ns.substring(with: NSRange(location: start, length: caret - start))
+            switch walk.next(selection) {
+            case .extend:
+                continue
+            case .done(let shrink):
+                if shrink { start = NSMaxRange(ns.rangeOfComposedCharacterSequence(at: start)) }
+                return NSRange(location: start, length: caret - start)
+            case .fail:
+                return nil
+            }
+        }
+        return nil
+    }
+}

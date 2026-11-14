@@ -57,10 +57,10 @@ final class SelectionConverter {
             let saved = PasteboardSnapshot(pb)
 
             var text = await copySelection(pb, timeout: 0.5)
-            var autoSelected = false
+            var autoSelection: AutoSelection?
             if text == nil, Settings.shared.fixWordBeforeCursor {
-                text = await selectWordBeforeCursor(pb)
-                autoSelected = text != nil
+                autoSelection = await selectWordBeforeCursor(pb)
+                text = autoSelection?.text
             }
             guard let text else {
                 saved.restore(pb)
@@ -72,7 +72,7 @@ final class SelectionConverter {
             let result = converter.convert(text, mode: mode)
             guard result.changed else {
                 // Put the cursor back where it was instead of leaving our selection behind.
-                if autoSelected { Keys.press(UInt16(kVK_RightArrow), flags: []) }
+                autoSelection?.restore()
                 saved.restore(pb)
                 lastStatus = "Looks right already"
                 return
@@ -112,10 +112,30 @@ final class SelectionConverter {
         return s
     }
 
-    /// Nothing selected: select the word just before the cursor with ⇧← steps (see WordWalk) and
-    /// return it, or nil when there is none. On nil the cursor is where it was: a selection this made
-    /// is collapsed back to its right end, and nothing is pressed when no selection was made.
-    private func selectWordBeforeCursor(_ pb: NSPasteboard) async -> String? {
+    /// A selection this app made, and how to undo it (caret back where it was).
+    struct AutoSelection {
+        let text: String
+        let restore: () -> Void
+    }
+
+    /// Nothing selected: select the word just before the cursor. First through Accessibility (logical
+    /// order, right for Hebrew); if the app does not expose its text, or the copy does not match, with
+    /// ⇧← steps. Nil when there is no word; the caret is then where it was.
+    private func selectWordBeforeCursor(_ pb: NSPasteboard) async -> AutoSelection? {
+        if let ax = AXWord.select() {
+            if let copied = await copySelection(pb, timeout: 0.5), copied == ax.expected {
+                return AutoSelection(text: copied, restore: ax.restore)
+            }
+            ax.restore()
+        }
+        guard let text = await walkWithKeys(pb) else { return nil }
+        return AutoSelection(text: text, restore: { Keys.press(UInt16(kVK_RightArrow), flags: []) })
+    }
+
+    /// Fallback for apps without Accessibility text: extend with ⇧← one character at a time (see
+    /// WordWalk). Visual movement, so only reliable in left-to-right text. On nil the caret is where it
+    /// was: a selection this made is collapsed, and nothing is pressed when none was made.
+    private func walkWithKeys(_ pb: NSPasteboard) async -> String? {
         var walk = WordWalk()
         var last = ""
         steps: for _ in 0..<(walk.maxCharacters * 2 + 4) {

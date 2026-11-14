@@ -8,8 +8,10 @@ word just before the cursor.
 - **Right keyboard, typo** (`teh wrold`): misspelled words are fixed with the system spell checker.
 - Mixed text (`I love איןמעד`) swaps only the words that need it.
 - **Nothing selected:** the word just before the cursor is selected and fixed the same way (`akuo|` →
-  `שלום|`). It is selected one character at a time with Shift+Left, so words with punctuation keys in them
-  (`ba,g` → `נשמע`) are taken whole. On by default; turn it off in Settings.
+  `שלום|`). Words with punctuation keys in them (`ba,g` → `נשמע`) are taken whole. The word is found in
+  logical text order through Accessibility (Mac) or UI Automation (Windows), so Hebrew works too; apps that
+  do not expose their text fall back to Shift+Left steps, which are reliable only in left-to-right text.
+  On by default; turn it off in Settings.
 
 Hebrew ↔ English, on macOS (menu-bar app) and Windows (tray app).
 

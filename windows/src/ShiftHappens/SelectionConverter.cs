@@ -60,11 +60,11 @@ sealed class SelectionConverter
 
             var saved = ClipboardSnapshot.Take();
             var text = await CopySelection(500);
-            bool autoSelected = false;
+            AutoSelection? autoSelection = null;
             if (text is null && _settings.FixWordBeforeCursor)
             {
-                text = await SelectWordBeforeCursor();
-                autoSelected = text is not null;
+                autoSelection = await SelectWordBeforeCursor();
+                text = autoSelection?.Text;
             }
             if (text is null)
             {
@@ -78,7 +78,7 @@ sealed class SelectionConverter
             if (!result.Changed)
             {
                 // Put the cursor back where it was instead of leaving our selection behind.
-                if (autoSelected) Native.Arrow(Native.VK_RIGHT, shift: false);
+                autoSelection?.Restore();
                 saved.Restore();
                 LastStatus = "Looks right already";
                 return;
@@ -119,10 +119,31 @@ sealed class SelectionConverter
         return s.Length > 0 ? s : null;
     }
 
-    /// <summary>Nothing selected: select the word just before the cursor with Shift+Left steps (see
-    /// WordWalk) and return it, or null when there is none. On null the cursor is where it was: a
-    /// selection this made is collapsed back to its right end, and nothing is pressed when none was made.</summary>
-    static async Task<string?> SelectWordBeforeCursor()
+    /// <summary>A selection this app made, and how to undo it (caret back where it was).</summary>
+    sealed record AutoSelection(string Text, Action Restore);
+
+    static string Lines(string s) => s.Replace("\r\n", "\n");
+
+    /// <summary>Nothing selected: select the word just before the cursor. First through UI Automation
+    /// (logical order, right for Hebrew); if the control has no text pattern, or the copy does not match,
+    /// with Shift+Left steps. Null when there is no word; the caret is then where it was.</summary>
+    static async Task<AutoSelection?> SelectWordBeforeCursor()
+    {
+        if (UiaWord.Select() is { } uia)
+        {
+            if (await CopySelection(500) is { } copied && Lines(copied) == Lines(uia.Expected))
+                return new AutoSelection(copied, uia.Restore);
+            uia.Restore();
+        }
+        return await WalkWithKeys() is { } text
+            ? new AutoSelection(text, () => Native.Arrow(Native.VK_RIGHT, shift: false))
+            : null;
+    }
+
+    /// <summary>Fallback for controls without UI Automation text: extend with Shift+Left one character at
+    /// a time (see WordWalk). Visual movement, so only reliable in left-to-right text. On null the caret is
+    /// where it was: a selection this made is collapsed, and nothing is pressed when none was made.</summary>
+    static async Task<string?> WalkWithKeys()
     {
         var walk = new WordWalk();
         var last = "";

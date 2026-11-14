@@ -4,6 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- For UI Automation (UIAutomationClient). WPF's implicit usings are removed below so they do
+         not clash with Windows Forms names (Application, Clipboard, MessageBox). -->
+    <UseWPF>true</UseWPF>
     <!-- Lets the Mac and Linux CI compile it; it only runs on Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
@@ -17,6 +20,19 @@
     <!-- The release workflow passes -p:Version from the tag. -->
     <Version>1.2.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows" />
+    <Using Remove="System.Windows.Controls" />
+    <Using Remove="System.Windows.Data" />
+    <Using Remove="System.Windows.Documents" />
+    <Using Remove="System.Windows.Input" />
+    <Using Remove="System.Windows.Media" />
+    <Using Remove="System.Windows.Media.Imaging" />
+    <Using Remove="System.Windows.Navigation" />
+    <Using Remove="System.Windows.Shapes" />
+    <Using Include="System.IO" />
+  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\packaging\app.ico" LogicalName="app.ico" />

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import ShiftCore
 
@@ -46,5 +47,37 @@ func walk(_ text: String, max: Int = 40) -> (selected: String?, steps: Int) {
     @Test func tooLongFails() {
         #expect(walk(String(repeating: "a", count: 41)).selected == nil)
         #expect(walk(String(repeating: "a", count: 40)).selected == String(repeating: "a", count: 40))
+    }
+}
+
+@Suite struct WordBeforeTests {
+    func word(_ text: String, caret: Int? = nil) -> String? {
+        let ns = text as NSString
+        guard let r = WordWalk.wordBefore(caret: caret ?? ns.length, in: text) else { return nil }
+        return ns.substring(with: r)
+    }
+
+    @Test func logicalOrder() {
+        #expect(word("hello יקךךם") == "יקךךם")       // Hebrew run at the end
+        #expect(word("שלום עולמ") == "עולמ")
+        #expect(word("hello ba,g") == "ba,g")
+        #expect(word("akuo ") == "akuo ")
+        #expect(word("one\ntwo") == "two")
+    }
+
+    @Test func caretInsideText() {
+        // "hello akuo world", caret right after "akuo" (UTF-16 offset 10).
+        #expect(word("hello akuo world", caret: 10) == "akuo")
+    }
+
+    @Test func composedCharactersStayWhole() {
+        #expect(word("hi 👍🏽x") == "👍🏽x")
+        #expect(word("שָׁלוֹם") == "שָׁלוֹם")
+    }
+
+    @Test func noWord() {
+        #expect(word("") == nil)
+        #expect(word("abc", caret: 0) == nil)
+        #expect(word("   ") == nil)
     }
 }
