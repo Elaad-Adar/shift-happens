@@ -1,0 +1,117 @@
+{
+  "about": "Smart-mode cases run against the real system spell checker and this machine's layouts. mode: smart (default) or force.",
+  "cases": [
+    {
+      "in": "akuo",
+      "out": "שלום",
+      "why": "Hebrew typed on English"
+    },
+    {
+      "in": "nv",
+      "out": "מה",
+      "why": "two-letter Hebrew word typed on English"
+    },
+    {
+      "in": "akuo' nv ba,g?",
+      "out": "שלום, מה נשתע?",
+      "why": "sentence with punctuation; ' key types a comma on Hebrew; , key types ת"
+    },
+    {
+      "in": "vh ntav",
+      "out": "הי מאשה",
+      "why": "names typed on English"
+    },
+    {
+      "in": "יקךךם",
+      "out": "hello",
+      "why": "English typed on Hebrew"
+    },
+    {
+      "in": "יקךךםת ׳םרךג",
+      "out": "hello, world",
+      "why": "English sentence on Hebrew, geresh is the W key"
+    },
+    {
+      "in": "ןצ ךםהק איןד",
+      "out": "im love this",
+      "why": "English sentence on Hebrew"
+    },
+    {
+      "in": "קךששג",
+      "out": "elaad",
+      "why": "unknown word, no close spelling: swap"
+    },
+    {
+      "in": "I love איןמעד",
+      "out": "I love things",
+      "why": "mixed: only the wrong-layout word swaps"
+    },
+    {
+      "in": "teh",
+      "out": "the",
+      "why": "English typo"
+    },
+    {
+      "in": "hello akuo",
+      "out": "hello שלום",
+      "why": "same English keyboard, second word meant in Hebrew"
+    },
+    {
+      "in": "שלום ךםהק איןד",
+      "out": "שלום love this",
+      "why": "same Hebrew keyboard, later words meant in English (4+ letters each)"
+    },
+    {
+      "in": "teh wrold",
+      "out": "the world",
+      "why": "English typos; swapped Hebrew is short words only"
+    },
+    {
+      "in": "Hello wrold",
+      "out": "Hello world",
+      "why": "keeps capital, fixes typo"
+    },
+    {
+      "in": "TEH",
+      "out": "THE",
+      "why": "all caps kept"
+    },
+    {
+      "in": "שלומ",
+      "out": "שלום",
+      "why": "Hebrew final letter at end"
+    },
+    {
+      "in": "what is this",
+      "out": "what is this",
+      "why": "correct English left alone"
+    },
+    {
+      "in": "מה נשמע",
+      "out": "מה נשמע",
+      "why": "correct Hebrew left alone"
+    },
+    {
+      "in": "123",
+      "out": "123",
+      "why": "digits only"
+    },
+    {
+      "in": "",
+      "out": "",
+      "why": "empty"
+    },
+    {
+      "in": "hello",
+      "out": "יקךךם",
+      "mode": "force",
+      "why": "force swap ignores the dictionary"
+    },
+    {
+      "in": "שלום",
+      "out": "akuo",
+      "mode": "force",
+      "why": "force swap Hebrew to English"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+import Foundation
+import Testing
+import ShiftCore
+@testable import ShiftMac
+
+let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
+struct SmartCase: Decodable, CustomTestStringConvertible {
+    let `in`: String
+    let out: String
+    let mode: String?
+    let why: String
+    var testDescription: String { "\(self.in) -> \(out) (\(why))" }
+}
+
+struct SmartCases: Decodable { let cases: [SmartCase] }
+
+func loadCases() -> [SmartCase] {
+    let url = repoRoot.appendingPathComponent("fixtures/smart-cases.json")
+    return (try? JSONDecoder().decode(SmartCases.self, from: Data(contentsOf: url)).cases) ?? []
+}
+
+/// Spell checks are serialized on the main actor; the spell service is warmed up once.
+@MainActor
+@Suite(.serialized) struct MacTests {
+    static let spell: MacSpellChecker = {
+        let s = MacSpellChecker()
+        s.warmUp()
+        return s
+    }()
+
+    @Test func liveLayoutMatchesFixture() throws {
+        let live = MacLayouts.table(try MacLayouts.findPair())
+        let fixture = try LayoutTable.load(from: repoRoot.appendingPathComponent("fixtures/mac-abc-hebrew.json"))
+        #expect(live == fixture, "Layouts changed: run `shift-happens --dump-layout > fixtures/mac-abc-hebrew.json`")
+    }
+
+    @Test(arguments: loadCases())
+    func smartCase(_ c: SmartCase) throws {
+        let converter = Converter(table: MacLayouts.table(try MacLayouts.findPair()), spell: Self.spell)
+        let result = converter.convert(c.in, mode: c.mode == "force" ? .forceSwap : .smart)
+        #expect(result.text == c.out, "\(result.notes.joined(separator: " | "))")
+    }
+}

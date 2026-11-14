@@ -1,0 +1,456 @@
+{
+  "entries" : [
+    {
+      "hebrew" : "ש",
+      "key" : 0,
+      "latin" : "a",
+      "shift" : false
+    },
+    {
+      "hebrew" : "שׁ",
+      "key" : 0,
+      "latin" : "A",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ד",
+      "key" : 1,
+      "latin" : "s",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ג",
+      "key" : 2,
+      "latin" : "d",
+      "shift" : false
+    },
+    {
+      "hebrew" : "„",
+      "key" : 2,
+      "latin" : "D",
+      "shift" : true
+    },
+    {
+      "hebrew" : "כ",
+      "key" : 3,
+      "latin" : "f",
+      "shift" : false
+    },
+    {
+      "hebrew" : "י",
+      "key" : 4,
+      "latin" : "h",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ע",
+      "key" : 5,
+      "latin" : "g",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ז",
+      "key" : 6,
+      "latin" : "z",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ס",
+      "key" : 7,
+      "latin" : "x",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ב",
+      "key" : 8,
+      "latin" : "c",
+      "shift" : false
+    },
+    {
+      "hebrew" : "לֹ",
+      "key" : 8,
+      "latin" : "C",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ה",
+      "key" : 9,
+      "latin" : "v",
+      "shift" : false
+    },
+    {
+      "hebrew" : "נ",
+      "key" : 11,
+      "latin" : "b",
+      "shift" : false
+    },
+    {
+      "hebrew" : "/",
+      "key" : 12,
+      "latin" : "q",
+      "shift" : false
+    },
+    {
+      "hebrew" : "׳",
+      "key" : 13,
+      "latin" : "w",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ק",
+      "key" : 14,
+      "latin" : "e",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ר",
+      "key" : 15,
+      "latin" : "r",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ט",
+      "key" : 16,
+      "latin" : "y",
+      "shift" : false
+    },
+    {
+      "hebrew" : "א",
+      "key" : 17,
+      "latin" : "t",
+      "shift" : false
+    },
+    {
+      "hebrew" : "1",
+      "key" : 18,
+      "latin" : "1",
+      "shift" : false
+    },
+    {
+      "hebrew" : "!",
+      "key" : 18,
+      "latin" : "!",
+      "shift" : true
+    },
+    {
+      "hebrew" : "2",
+      "key" : 19,
+      "latin" : "2",
+      "shift" : false
+    },
+    {
+      "hebrew" : "@",
+      "key" : 19,
+      "latin" : "@",
+      "shift" : true
+    },
+    {
+      "hebrew" : "3",
+      "key" : 20,
+      "latin" : "3",
+      "shift" : false
+    },
+    {
+      "hebrew" : "#",
+      "key" : 20,
+      "latin" : "#",
+      "shift" : true
+    },
+    {
+      "hebrew" : "4",
+      "key" : 21,
+      "latin" : "4",
+      "shift" : false
+    },
+    {
+      "hebrew" : "$",
+      "key" : 21,
+      "latin" : "$",
+      "shift" : true
+    },
+    {
+      "hebrew" : "6",
+      "key" : 22,
+      "latin" : "6",
+      "shift" : false
+    },
+    {
+      "hebrew" : "^",
+      "key" : 22,
+      "latin" : "^",
+      "shift" : true
+    },
+    {
+      "hebrew" : "5",
+      "key" : 23,
+      "latin" : "5",
+      "shift" : false
+    },
+    {
+      "hebrew" : "%",
+      "key" : 23,
+      "latin" : "%",
+      "shift" : true
+    },
+    {
+      "hebrew" : "=",
+      "key" : 24,
+      "latin" : "=",
+      "shift" : false
+    },
+    {
+      "hebrew" : "+",
+      "key" : 24,
+      "latin" : "+",
+      "shift" : true
+    },
+    {
+      "hebrew" : "9",
+      "key" : 25,
+      "latin" : "9",
+      "shift" : false
+    },
+    {
+      "hebrew" : ")",
+      "key" : 25,
+      "latin" : "(",
+      "shift" : true
+    },
+    {
+      "hebrew" : "7",
+      "key" : 26,
+      "latin" : "7",
+      "shift" : false
+    },
+    {
+      "hebrew" : "₪",
+      "key" : 26,
+      "latin" : "&",
+      "shift" : true
+    },
+    {
+      "hebrew" : "-",
+      "key" : 27,
+      "latin" : "-",
+      "shift" : false
+    },
+    {
+      "hebrew" : "_",
+      "key" : 27,
+      "latin" : "_",
+      "shift" : true
+    },
+    {
+      "hebrew" : "8",
+      "key" : 28,
+      "latin" : "8",
+      "shift" : false
+    },
+    {
+      "hebrew" : "*",
+      "key" : 28,
+      "latin" : "*",
+      "shift" : true
+    },
+    {
+      "hebrew" : "0",
+      "key" : 29,
+      "latin" : "0",
+      "shift" : false
+    },
+    {
+      "hebrew" : "(",
+      "key" : 29,
+      "latin" : ")",
+      "shift" : true
+    },
+    {
+      "hebrew" : "[",
+      "key" : 30,
+      "latin" : "]",
+      "shift" : false
+    },
+    {
+      "hebrew" : "{",
+      "key" : 30,
+      "latin" : "}",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ם",
+      "key" : 31,
+      "latin" : "o",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ו",
+      "key" : 32,
+      "latin" : "u",
+      "shift" : false
+    },
+    {
+      "hebrew" : "וֹ",
+      "key" : 32,
+      "latin" : "U",
+      "shift" : true
+    },
+    {
+      "hebrew" : "]",
+      "key" : 33,
+      "latin" : "[",
+      "shift" : false
+    },
+    {
+      "hebrew" : "}",
+      "key" : 33,
+      "latin" : "{",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ן",
+      "key" : 34,
+      "latin" : "i",
+      "shift" : false
+    },
+    {
+      "hebrew" : "פ",
+      "key" : 35,
+      "latin" : "p",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ך",
+      "key" : 37,
+      "latin" : "l",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ח",
+      "key" : 38,
+      "latin" : "j",
+      "shift" : false
+    },
+    {
+      "hebrew" : ",",
+      "key" : 39,
+      "latin" : "'",
+      "shift" : false
+    },
+    {
+      "hebrew" : "״",
+      "key" : 39,
+      "latin" : "\"",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ל",
+      "key" : 40,
+      "latin" : "k",
+      "shift" : false
+    },
+    {
+      "hebrew" : "לֹ",
+      "key" : 40,
+      "latin" : "K",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ף",
+      "key" : 41,
+      "latin" : ";",
+      "shift" : false
+    },
+    {
+      "hebrew" : ":",
+      "key" : 41,
+      "latin" : ":",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ֿ",
+      "key" : 42,
+      "latin" : "\\",
+      "shift" : false
+    },
+    {
+      "hebrew" : "|",
+      "key" : 42,
+      "latin" : "|",
+      "shift" : true
+    },
+    {
+      "hebrew" : "ת",
+      "key" : 43,
+      "latin" : ",",
+      "shift" : false
+    },
+    {
+      "hebrew" : ">",
+      "key" : 43,
+      "latin" : "<",
+      "shift" : true
+    },
+    {
+      "hebrew" : ".",
+      "key" : 44,
+      "latin" : "/",
+      "shift" : false
+    },
+    {
+      "hebrew" : "?",
+      "key" : 44,
+      "latin" : "?",
+      "shift" : true
+    },
+    {
+      "hebrew" : "מ",
+      "key" : 45,
+      "latin" : "n",
+      "shift" : false
+    },
+    {
+      "hebrew" : "צ",
+      "key" : 46,
+      "latin" : "m",
+      "shift" : false
+    },
+    {
+      "hebrew" : "ץ",
+      "key" : 47,
+      "latin" : ".",
+      "shift" : false
+    },
+    {
+      "hebrew" : "<",
+      "key" : 47,
+      "latin" : ">",
+      "shift" : true
+    },
+    {
+      "hebrew" : " ",
+      "key" : 49,
+      "latin" : " ",
+      "shift" : false
+    },
+    {
+      "hebrew" : " ",
+      "key" : 49,
+      "latin" : " ",
+      "shift" : true
+    },
+    {
+      "hebrew" : ";",
+      "key" : 50,
+      "latin" : "`",
+      "shift" : false
+    },
+    {
+      "hebrew" : "~",
+      "key" : 50,
+      "latin" : "~",
+      "shift" : true
+    }
+  ],
+  "hebrewID" : "com.apple.keylayout.Hebrew",
+  "latinID" : "com.apple.keylayout.ABC"
+}
