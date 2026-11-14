@@ -1,11 +1,17 @@
 # Shift Happens
 
-Typed a sentence on the wrong keyboard? Select it, press one hotkey.
+Typed a sentence on the wrong keyboard? Select it, press one hotkey. Nothing selected? The hotkey fixes the
+word just before the cursor.
 
 - **Wrong keyboard** (`akuo` instead of `שלום`, `יקךךם` instead of `hello`): the text is swapped key for key
   to the other layout, and the keyboard switches to the right language.
 - **Right keyboard, typo** (`teh wrold`): misspelled words are fixed with the system spell checker.
 - Mixed text (`I love איןמעד`) swaps only the words that need it.
+- **Nothing selected:** the word just before the cursor is selected and fixed the same way (`akuo|` →
+  `שלום|`). Words with punctuation keys in them (`ba,g` → `נשמע`) are taken whole. The word is found in
+  logical text order through Accessibility (Mac) or UI Automation (Windows), so Hebrew works too; apps that
+  do not expose their text fall back to Shift+Left steps, which are reliable only in left-to-right text.
+  On by default; turn it off in Settings.
 
 Hebrew ↔ English, on macOS (menu-bar app) and Windows (tray app).
 
@@ -114,6 +120,64 @@ dotnet publish src\ShiftHappens -c Release -r win-x64 --self-contained -p:Publis
 `windows/src/ShiftCore` is a line-for-line port of the Swift `ShiftCore`; its tests run the same cases on
 the Mac layout table, so a change to the decision logic goes into both.
 
+## Updating to a new release
+
+There is no automatic update yet. The version you have is shown in the menu-bar menu (Mac) or the
+tray menu (Windows): "Shift Happens 1.2.0". The latest is on the
+[Releases page](https://github.com/Elaad-Adar/shift-happens/releases/latest). Updating installs the new
+release over the old one; your settings (hotkeys, options) are kept.
+
+### Mac
+
+Download and replace (quits the running copy first):
+
+```bash
+D="$(mktemp -d)" && gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --output "$D/shift-happens-mac.zip" && pkill ShiftHappens; ditto -x -k "$D/shift-happens-mac.zip" /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app"
+```
+
+macOS treats every new build as a new app, so approve Accessibility again:
+
+```bash
+tccutil reset Accessibility io.github.elaad-adar.shift-happens; open "/Applications/Shift Happens.app"
+```
+
+Click **Open System Settings** in the pop-up, turn on **Shift Happens**, then restart it:
+
+```bash
+pkill ShiftHappens; open "/Applications/Shift Happens.app"
+```
+
+Without `gh`: quit Shift Happens from its menu, download the `-mac.zip` from the Releases page, unzip it,
+drag **Shift Happens** into Applications and choose **Replace**, then do the Accessibility steps above.
+
+### Windows
+
+PowerShell, one command at a time (same as installing; `-Force` replaces the old exe):
+
+```powershell
+gh release download --repo Elaad-Adar/shift-happens --pattern '*-windows.zip' --output "$env:TEMP\shift-happens-windows.zip" --clobber
+```
+
+```powershell
+Stop-Process -Name ShiftHappens -ErrorAction SilentlyContinue
+```
+
+```powershell
+Expand-Archive -Path "$env:TEMP\shift-happens-windows.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\ShiftHappens" -Force
+```
+
+```powershell
+Unblock-File "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
+```
+
+```powershell
+Start-Process "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
+```
+
+Without `gh`: right-click the tray icon → **Quit**, download the `-windows.zip` from the Releases page,
+unzip it over the old `ShiftHappens.exe` (replace), and start it. "Start with Windows" keeps working
+because the exe stays in the same place.
+
 ## Release a new version
 
 Merge the change to `main`, then tag it. The `release` workflow tests, builds, and publishes a Mac zip
@@ -154,7 +218,10 @@ Approve it in the pop-up, then restart it: `pkill ShiftHappens; open "/Applicati
 5. A 4+ letter word that clearly reads right the other way goes against its group (`hello akuo` →
    `hello שלום`).
 
-Known limits: 1–3 letter words in mixed-language text follow their group; apps that block synthetic
+Known limits: VS Code's whole-line copy of an empty selection is recognised (it marks it in the clipboard),
+but editors that copy the line without a mark (JetBrains) look like a selection, so select the word yourself
+there; apps where Shift+Left does not select (terminals)
+just beep; 1–3 letter words in mixed-language text follow their group; apps that block synthetic
 copy/paste (some password fields, remote desktops) are not supported; clipboard managers see the
 temporary clipboard content.
 

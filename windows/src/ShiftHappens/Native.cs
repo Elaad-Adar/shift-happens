@@ -11,7 +11,8 @@ static class Native
     public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
     public const ushort VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C;
     public const uint MAPVK_VSC_TO_VK_EX = 3;
-    const uint INPUT_KEYBOARD = 1, KEYEVENTF_KEYUP = 0x2;
+    const uint INPUT_KEYBOARD = 1, KEYEVENTF_EXTENDEDKEY = 0x1, KEYEVENTF_KEYUP = 0x2;
+    public const ushort VK_LEFT = 0x25, VK_RIGHT = 0x27;
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -80,11 +81,23 @@ static class Native
     [DllImport("user32.dll", SetLastError = true)]
     static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
-    static INPUT Key(ushort vk, bool up) => new()
+    static INPUT Key(ushort vk, bool up, bool extended = false) => new()
     {
         type = INPUT_KEYBOARD,
-        U = new InputUnion { ki = new KEYBDINPUT { wVk = vk, dwFlags = up ? KEYEVENTF_KEYUP : 0 } },
+        U = new InputUnion
+        {
+            ki = new KEYBDINPUT { wVk = vk, dwFlags = (up ? KEYEVENTF_KEYUP : 0) | (extended ? KEYEVENTF_EXTENDEDKEY : 0) },
+        },
     };
+
+    /// <summary>An arrow key (extended key, so NumLock cannot turn it into a keypad digit), with or without Shift.</summary>
+    public static void Arrow(ushort vk, bool shift)
+    {
+        var inputs = shift
+            ? new[] { Key(VK_SHIFT, false), Key(vk, false, true), Key(vk, true, true), Key(VK_SHIFT, true) }
+            : new[] { Key(vk, false, true), Key(vk, true, true) };
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
 
     /// <summary>Ctrl + key (C or V), as one atomic input batch. Virtual keys, so it works on any layout.</summary>
     public static void CtrlChord(ushort vk)

@@ -76,6 +76,12 @@ final class Settings {
         set { setShortcut(newValue, "forceSwapShortcut") }
     }
 
+    /// With nothing selected, select and fix the word just before the cursor.
+    var fixWordBeforeCursor: Bool {
+        get { defaults.object(forKey: "fixWordBeforeCursor") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "fixWordBeforeCursor") }
+    }
+
     /// Switch the active keyboard to the language of the swapped text.
     var switchLayoutAfterSwap: Bool {
         get { defaults.object(forKey: "switchLayoutAfterSwap") as? Bool ?? true }

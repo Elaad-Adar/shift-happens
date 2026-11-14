@@ -6,6 +6,7 @@ sealed class SettingsForm : Form
     readonly TrayApp _app;
     readonly HotkeyBox _convertBox = new();
     readonly HotkeyBox _forceBox = new();
+    readonly CheckBox _wordBox = new() { Text = "With nothing selected, fix the word before the cursor", AutoSize = true };
     readonly CheckBox _switchBox = new() { Text = "Switch keyboard to the new language after a swap", AutoSize = true };
     readonly CheckBox _startupBox = new() { Text = "Start with Windows", AutoSize = true };
     readonly Label _status = new() { AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(420, 0) };
@@ -42,6 +43,9 @@ sealed class SettingsForm : Form
         var clearConvert = new Button { Text = "Clear", AutoSize = true };
         clearConvert.Click += (_, _) => { _convertBox.Shortcut = null; Save(); };
 
+        _wordBox.Checked = s.FixWordBeforeCursor;
+        _wordBox.CheckedChanged += (_, _) => { s.FixWordBeforeCursor = _wordBox.Checked; s.Save(); };
+
         _switchBox.Checked = s.SwitchLayoutAfterSwap;
         _switchBox.CheckedChanged += (_, _) => { s.SwitchLayoutAfterSwap = _switchBox.Checked; s.Save(); };
 
@@ -76,7 +80,7 @@ sealed class SettingsForm : Form
             WrapContents = false,
             Dock = DockStyle.Fill,
         };
-        stack.Controls.AddRange(new Control[] { grid, help, _switchBox, _startupBox, _status });
+        stack.Controls.AddRange(new Control[] { grid, help, _wordBox, _switchBox, _startupBox, _status });
         Controls.Add(stack);
         RefreshStatus();
     }

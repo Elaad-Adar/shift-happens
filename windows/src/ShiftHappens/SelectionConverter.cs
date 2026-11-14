@@ -59,14 +59,17 @@ sealed class SelectionConverter
             }
 
             var saved = ClipboardSnapshot.Take();
-            uint before = Native.GetClipboardSequenceNumber();
-            Native.CtrlChord((ushort)Keys.C);
-
-            if (!await WaitFor(() => Native.GetClipboardSequenceNumber() != before, 500)
-                || Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "") is not { Length: > 0 } text)
+            var text = await CopySelection(500);
+            AutoSelection? autoSelection = null;
+            if (text is null && _settings.FixWordBeforeCursor)
+            {
+                autoSelection = await SelectWordBeforeCursor();
+                text = autoSelection?.Text;
+            }
+            if (text is null)
             {
                 saved.Restore();
-                LastStatus = "Nothing selected";
+                LastStatus = _settings.FixWordBeforeCursor ? "No word before the cursor" : "Nothing selected";
                 SystemSounds.Beep.Play();
                 return;
             }
@@ -74,6 +77,8 @@ sealed class SelectionConverter
             var result = _converter.Convert(text, mode);
             if (!result.Changed)
             {
+                // Put the cursor back where it was instead of leaving our selection behind.
+                autoSelection?.Restore();
                 saved.Restore();
                 LastStatus = "Looks right already";
                 return;
@@ -101,6 +106,103 @@ sealed class SelectionConverter
         {
             _busy = false;
         }
+    }
+
+    /// <summary>Ctrl+C, then the copied text, or null when the clipboard did not change in time
+    /// (nothing selected) or holds no text.</summary>
+    static async Task<string?> CopySelection(int timeoutMs)
+    {
+        uint before = Native.GetClipboardSequenceNumber();
+        Native.CtrlChord((ushort)Keys.C);
+        if (!await WaitFor(() => Native.GetClipboardSequenceNumber() != before, timeoutMs)) return null;
+        var s = Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "");
+        if (s.Length == 0 || IsEditorLineCopy()) return null;
+        return s;
+    }
+
+    /// <summary>A selection this app made, and how to undo it (caret back where it was).</summary>
+    sealed record AutoSelection(string Text, Action Restore);
+
+    static string Lines(string s) => s.Replace("\r\n", "\n");
+
+    /// <summary>An editor's whole-line copy of an empty selection (VS Code marks it in Chromium's custom
+    /// clipboard data): counts as "nothing selected".</summary>
+    static bool IsEditorLineCopy()
+    {
+        try
+        {
+            var data = Retry(() => Clipboard.GetData(LineCopy.WindowsClipboardFormat));
+            var bytes = data switch
+            {
+                MemoryStream ms => ms.ToArray(),
+                byte[] b => b,
+                _ => null,
+            };
+            return bytes is not null && LineCopy.IsFromEmptySelection(bytes);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Nothing selected: select the word just before the cursor. First through UI Automation
+    /// (logical order, right for Hebrew); if the control has no text pattern, or the copy does not match,
+    /// with Shift+Left steps. Null when there is no word; the caret is then where it was.</summary>
+    static async Task<AutoSelection?> SelectWordBeforeCursor()
+    {
+        var outcome = UiaWord.Select();
+        if (outcome.Kind == UiaWord.Kind.NoWord) return null;
+        if (outcome.Selection is { } uia)
+        {
+            if (await CopySelection(500) is { } copied && Lines(copied) == Lines(uia.Expected))
+                return new AutoSelection(copied, uia.Restore);
+            uia.Restore();  // the control did not really select it: try the key walk
+        }
+        return await WalkWithKeys() is { } text
+            ? new AutoSelection(text, () => Native.Arrow(Native.VK_RIGHT, shift: false))
+            : null;
+    }
+
+    /// <summary>Fallback for controls without UI Automation text: extend with Shift+Left one character at
+    /// a time (see WordWalk). Visual movement, so only reliable in left-to-right text. On null the caret is
+    /// where it was: a selection this made is collapsed, and nothing is pressed when none was made.</summary>
+    static async Task<string?> WalkWithKeys()
+    {
+        var walk = new WordWalk();
+        var last = "";
+        for (int i = 0; i < walk.MaxCharacters * 2 + 4; i++)
+        {
+            Native.Arrow(Native.VK_LEFT, shift: true);
+            var selection = await CopyStep(hadSelection: last.Length > 0);
+            if (selection is null) break;
+            var step = walk.Next(selection);
+            if (step == WordWalk.Step.Extend)
+            {
+                last = selection;
+                continue;
+            }
+            if (step == WordWalk.Step.Done) return selection;
+            if (step == WordWalk.Step.DoneShrink)
+            {
+                Native.Arrow(Native.VK_RIGHT, shift: true);
+                if (await CopySelection(500) is { } final) return final;
+            }
+            if (selection.Length > 0) last = selection;
+            break;  // Fail, or the final copy failed
+        }
+        if (last.Length > 0) Native.Arrow(Native.VK_RIGHT, shift: false);
+        return null;
+    }
+
+    /// <summary>One copy during the walk, retried once for slow apps. With nothing selected yet, still no
+    /// clipboard change means an empty selection (start of the field): "". With a selection already made,
+    /// it is null (abort) rather than a guess that the field boundary was reached.</summary>
+    static async Task<string?> CopyStep(bool hadSelection)
+    {
+        if (await CopySelection(250) is { } s) return s;
+        if (await CopySelection(750) is { } t) return t;
+        return hadSelection ? null : "";
     }
 
     static string Describe(Conversion r)
