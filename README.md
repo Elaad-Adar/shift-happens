@@ -33,7 +33,7 @@ notarized by Apple, which is why the `xattr` step is needed.
 
 | Action | Default hotkey |
 |---|---|
-| Fix selection (smart: swap or spell-fix) | `Ctrl+Alt+Space` |
+| Fix selection (smart: swap or spell-fix) | `Ctrl+Shift+Space` |
 | Swap selection (always swap) | not set |
 
 Both are set in **Settings…** from the tray icon (right-click; double-click opens Settings), together with
@@ -62,6 +62,17 @@ app still swaps layouts. Check with:
 ```powershell
 & "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --spell שלום he
 ```
+
+Command-line checks (run from PowerShell; it does not wait for the exe, so output can appear after the
+next prompt):
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --convert "akuo" --verbose
+& "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --dump-layout "$env:TEMP\windows-us-hebrew.json"
+```
+
+If the hotkey is taken by another app (the Claude desktop app uses `Ctrl+Alt+Space`), Shift Happens says so
+at startup and opens Settings to pick another.
 
 Windows does not let a normal app send keys into an app running as administrator; run Shift Happens as
 administrator too if you need that.

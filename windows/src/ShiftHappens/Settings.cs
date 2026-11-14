@@ -6,7 +6,9 @@ namespace ShiftHappens;
 /// <summary>A hotkey as RegisterHotKey wants it: MOD_* flags and a virtual-key code.</summary>
 sealed record Shortcut(uint Modifiers, uint Key)
 {
-    public static readonly Shortcut DefaultConvert = new(Native.MOD_CONTROL | Native.MOD_ALT, (uint)Keys.Space);
+    /// <summary>Ctrl+Shift+Space, same keys as the Mac app. Not Ctrl+Alt+Space: the Claude desktop app
+    /// uses it for quick search.</summary>
+    public static readonly Shortcut DefaultConvert = new(Native.MOD_CONTROL | Native.MOD_SHIFT, (uint)Keys.Space);
 
     public string Display
     {

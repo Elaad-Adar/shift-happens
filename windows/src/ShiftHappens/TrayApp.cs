@@ -42,7 +42,14 @@ sealed class TrayApp : ApplicationContext
         // Keyboards added or removed in Windows settings.
         SystemEvents.UserPreferenceChanged += OnPreferenceChanged;
 
-        if (!_settings.WelcomeShown)
+        if (HotkeyProblems.Count > 0)
+        {
+            // Another app owns the shortcut: say so and open Settings to pick another one.
+            _tray.ShowBalloonTip(8000, "Shift Happens: pick another hotkey",
+                string.Join(Environment.NewLine, HotkeyProblems), ToolTipIcon.Warning);
+            OpenSettings();
+        }
+        else if (!_settings.WelcomeShown)
         {
             var key = _settings.ConvertShortcut?.Display ?? "the hotkey";
             _tray.ShowBalloonTip(5000, "Shift Happens is running",
