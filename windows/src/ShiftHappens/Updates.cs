@@ -60,6 +60,10 @@ sealed class UpdateChecker
     {
         _settings = settings;
         _timer.Tick += (_, _) => CheckIfDue();
+        // The last result is saved with the check time, so a restart within the day does not hide an
+        // update that was already found (the throttle would otherwise skip re-checking for up to 24 h).
+        if (settings.LatestReleaseVersion is { } v && Uri.TryCreate(settings.LatestReleaseUrl, UriKind.Absolute, out var u))
+            Latest = new Releases.Latest(v, u);
     }
 
     static HttpClient CreateClient()
@@ -103,6 +107,8 @@ sealed class UpdateChecker
                 return;
             }
             Latest = found;
+            _settings.LatestReleaseVersion = found.Version;
+            _settings.LatestReleaseUrl = found.Url.AbsoluteUri;
             _settings.LastUpdateCheck = DateTime.UtcNow;
             _settings.Save();
             Status = Available is { } a ? $"Version {a.Version} is available" : "You have the latest version";

@@ -54,6 +54,9 @@ sealed class Settings
     /// <summary>Ask GitHub once a day whether a newer release exists.</summary>
     public bool CheckForUpdates { get; set; } = true;
     public DateTime? LastUpdateCheck { get; set; }
+    /// <summary>Result of the last check, saved with its time so a restart does not hide a found update.</summary>
+    public string? LatestReleaseVersion { get; set; }
+    public string? LatestReleaseUrl { get; set; }
 
     static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ShiftHappens");
     static string FilePath => Path.Combine(Dir, "settings.json");

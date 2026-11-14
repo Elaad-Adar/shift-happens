@@ -35,7 +35,18 @@ final class UpdateChecker {
     var onChange: (() -> Void)?
 
     private let lastCheckKey = "lastUpdateCheck"
+    private let latestVersionKey = "latestReleaseVersion"
+    private let latestURLKey = "latestReleaseURL"
     private let interval: TimeInterval = 24 * 60 * 60
+
+    /// The last result is saved with the check time, so a restart within the day does not hide an
+    /// update that was already found (the throttle would otherwise skip re-checking for up to 24 h).
+    init() {
+        let d = UserDefaults.standard
+        if let v = d.string(forKey: latestVersionKey), let u = d.string(forKey: latestURLKey), let url = URL(string: u) {
+            latest = Releases.Latest(version: v, url: url)
+        }
+    }
 
     /// A newer release than this app, if the last check found one.
     var available: Releases.Latest? {
@@ -72,6 +83,8 @@ final class UpdateChecker {
                 return
             }
             latest = found
+            UserDefaults.standard.set(found.version, forKey: latestVersionKey)
+            UserDefaults.standard.set(found.url.absoluteString, forKey: latestURLKey)
             UserDefaults.standard.set(Date(), forKey: lastCheckKey)
             status = available.map { "Version \($0.version) is available" } ?? "You have the latest version"
         } catch {
