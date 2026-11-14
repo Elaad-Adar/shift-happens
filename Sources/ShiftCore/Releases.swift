@@ -39,6 +39,11 @@ public enum Releases {
     public struct Latest: Equatable {
         public let version: String  // without the leading "v"
         public let url: URL
+
+        public init(version: String, url: URL) {
+            self.version = version
+            self.url = url
+        }
     }
 
     /// The GitHub API answer for `releases/latest`: `tag_name` and `html_url`.
