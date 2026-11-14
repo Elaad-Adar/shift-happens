@@ -20,7 +20,7 @@ in the Elaad-Adar workspace).
 Both are set in **Settings…** from the menu-bar keyboard icon. `⌃⌥Space` is not the default because macOS
 uses it for "next input source". Undo with `⌘Z` in the app you typed in.
 
-## Install from a release (macOS 13+)
+## Install from a release (macOS 13+, Apple Silicon and Intel)
 
 ```bash
 gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --dir /tmp/shift-happens --clobber && ditto -x -k /tmp/shift-happens/*-mac.zip /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app" && open "/Applications/Shift Happens.app"
