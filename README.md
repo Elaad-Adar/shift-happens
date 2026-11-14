@@ -41,13 +41,25 @@ Both are set in **Settings…** from the tray icon (right-click; double-click op
 
 ### Install from a release (Windows 10/11, x64)
 
-PowerShell, one line at a time:
+PowerShell, one command at a time:
 
 ```powershell
 gh release download --repo Elaad-Adar/shift-happens --pattern '*-windows.zip' --output "$env:TEMP\shift-happens-windows.zip" --clobber
+```
+
+```powershell
 Stop-Process -Name ShiftHappens -ErrorAction SilentlyContinue
+```
+
+```powershell
 Expand-Archive -Path "$env:TEMP\shift-happens-windows.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\ShiftHappens" -Force
+```
+
+```powershell
 Unblock-File "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
+```
+
+```powershell
 Start-Process "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
 ```
 
@@ -80,8 +92,22 @@ administrator too if you need that.
 ### Build from source (Windows, .NET 8 SDK)
 
 ```powershell
-cd D:\dev\shift-happens\windows
+cd D:\dev\shift-happens
+```
+
+```powershell
+git pull
+```
+
+```powershell
+cd windows
+```
+
+```powershell
 dotnet test
+```
+
+```powershell
 dotnet publish src\ShiftHappens -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ..\build\windows
 ```
 
