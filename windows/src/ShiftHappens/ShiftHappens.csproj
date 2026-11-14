@@ -15,7 +15,7 @@
     <Product>Shift Happens</Product>
     <Company>Elaad Adar</Company>
     <!-- The release workflow passes -p:Version from the tag. -->
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

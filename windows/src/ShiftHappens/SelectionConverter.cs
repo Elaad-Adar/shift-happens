@@ -59,14 +59,12 @@ sealed class SelectionConverter
             }
 
             var saved = ClipboardSnapshot.Take();
-            uint before = Native.GetClipboardSequenceNumber();
-            Native.CtrlChord((ushort)Keys.C);
-
-            if (!await WaitFor(() => Native.GetClipboardSequenceNumber() != before, 500)
-                || Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "") is not { Length: > 0 } text)
+            var text = await CopySelection(500);
+            if (text is null && _settings.FixWordBeforeCursor) text = await SelectWordBeforeCursor();
+            if (text is null)
             {
                 saved.Restore();
-                LastStatus = "Nothing selected";
+                LastStatus = _settings.FixWordBeforeCursor ? "No word before the cursor" : "Nothing selected";
                 SystemSounds.Beep.Play();
                 return;
             }
@@ -101,6 +99,44 @@ sealed class SelectionConverter
         {
             _busy = false;
         }
+    }
+
+    /// <summary>Ctrl+C, then the copied text, or null when the clipboard did not change in time
+    /// (nothing selected) or holds no text.</summary>
+    static async Task<string?> CopySelection(int timeoutMs)
+    {
+        uint before = Native.GetClipboardSequenceNumber();
+        Native.CtrlChord((ushort)Keys.C);
+        if (!await WaitFor(() => Native.GetClipboardSequenceNumber() != before, timeoutMs)) return null;
+        var s = Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "");
+        return s.Length > 0 ? s : null;
+    }
+
+    /// <summary>Nothing selected: select the word just before the cursor with Shift+Left steps (see
+    /// WordWalk) and return it, or null (cursor put back) when there is none.</summary>
+    static async Task<string?> SelectWordBeforeCursor()
+    {
+        var walk = new WordWalk();
+        var last = "";
+        for (int i = 0; i < walk.MaxCharacters * 2 + 4; i++)
+        {
+            Native.Arrow(Native.VK_LEFT, shift: true);
+            var selection = await CopySelection(250) ?? last;
+            switch (walk.Next(selection))
+            {
+                case WordWalk.Step.Extend:
+                    last = selection;
+                    continue;
+                case WordWalk.Step.Done:
+                    return selection;
+                case WordWalk.Step.DoneShrink:
+                    Native.Arrow(Native.VK_RIGHT, shift: true);
+                    return await CopySelection(250);
+            }
+            break;  // Fail
+        }
+        Native.Arrow(Native.VK_RIGHT, shift: false);  // collapse the selection back to the cursor
+        return null;
     }
 
     static string Describe(Conversion r)

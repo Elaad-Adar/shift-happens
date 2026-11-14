@@ -48,6 +48,8 @@ sealed class Settings
     public Shortcut? ConvertShortcut { get; set; } = Shortcut.DefaultConvert;
     public Shortcut? ForceSwapShortcut { get; set; }
     public bool SwitchLayoutAfterSwap { get; set; } = true;
+    /// <summary>With nothing selected, select and fix the word just before the cursor.</summary>
+    public bool FixWordBeforeCursor { get; set; } = true;
     public bool WelcomeShown { get; set; }
 
     static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ShiftHappens");

@@ -1,11 +1,15 @@
 # Shift Happens
 
-Typed a sentence on the wrong keyboard? Select it, press one hotkey.
+Typed a sentence on the wrong keyboard? Select it, press one hotkey. Nothing selected? The hotkey fixes the
+word just before the cursor.
 
 - **Wrong keyboard** (`akuo` instead of `שלום`, `יקךךם` instead of `hello`): the text is swapped key for key
   to the other layout, and the keyboard switches to the right language.
 - **Right keyboard, typo** (`teh wrold`): misspelled words are fixed with the system spell checker.
 - Mixed text (`I love איןמעד`) swaps only the words that need it.
+- **Nothing selected:** the word just before the cursor is selected and fixed the same way (`akuo|` →
+  `שלום|`). It is selected one character at a time with Shift+Left, so words with punctuation keys in them
+  (`ba,g` → `נשמע`) are taken whole. On by default; turn it off in Settings.
 
 Hebrew ↔ English, on macOS (menu-bar app) and Windows (tray app).
 
@@ -154,7 +158,9 @@ Approve it in the pop-up, then restart it: `pkill ShiftHappens; open "/Applicati
 5. A 4+ letter word that clearly reads right the other way goes against its group (`hello akuo` →
    `hello שלום`).
 
-Known limits: 1–3 letter words in mixed-language text follow their group; apps that block synthetic
+Known limits: code editors that copy the whole line when nothing is selected (VS Code, JetBrains) are seen
+as "something selected", so select the word yourself there; apps where Shift+Left does not select (terminals)
+just beep; 1–3 letter words in mixed-language text follow their group; apps that block synthetic
 copy/paste (some password fields, remote desktops) are not supported; clipboard managers see the
 temporary clipboard content.
 

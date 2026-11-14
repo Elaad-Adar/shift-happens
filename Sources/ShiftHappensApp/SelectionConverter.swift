@@ -55,13 +55,14 @@ final class SelectionConverter {
 
             let pb = NSPasteboard.general
             let saved = PasteboardSnapshot(pb)
-            let before = pb.changeCount
-            Keys.press(UInt16(kVK_ANSI_C), flags: .maskCommand)
 
-            guard await waitFor({ pb.changeCount != before }, timeout: 0.5),
-                  let text = pb.string(forType: .string), !text.isEmpty else {
+            var text = await copySelection(pb, timeout: 0.5)
+            if text == nil, Settings.shared.fixWordBeforeCursor {
+                text = await selectWordBeforeCursor(pb)
+            }
+            guard let text else {
                 saved.restore(pb)
-                lastStatus = "Nothing selected"
+                lastStatus = Settings.shared.fixWordBeforeCursor ? "No word before the cursor" : "Nothing selected"
                 NSSound.beep()
                 return
             }
@@ -95,6 +96,39 @@ final class SelectionConverter {
         if r.swappedWords > 0 { parts.append("swapped \(r.swappedWords) word\(r.swappedWords == 1 ? "" : "s")") }
         if r.fixedWords > 0 { parts.append("fixed \(r.fixedWords) word\(r.fixedWords == 1 ? "" : "s")") }
         return parts.joined(separator: ", ").capitalizedFirst
+    }
+
+    /// ⌘C, then the copied text, or nil when the clipboard did not change in time (nothing selected)
+    /// or holds no text.
+    private func copySelection(_ pb: NSPasteboard, timeout: TimeInterval) async -> String? {
+        let before = pb.changeCount
+        Keys.press(UInt16(kVK_ANSI_C), flags: .maskCommand)
+        guard await waitFor({ pb.changeCount != before }, timeout: timeout),
+              let s = pb.string(forType: .string), !s.isEmpty else { return nil }
+        return s
+    }
+
+    /// Nothing selected: select the word just before the cursor with ⇧← steps (see WordWalk) and
+    /// return it, or nil (cursor put back where it was) when there is none.
+    private func selectWordBeforeCursor(_ pb: NSPasteboard) async -> String? {
+        var walk = WordWalk()
+        var last = ""
+        steps: for _ in 0..<(walk.maxCharacters * 2 + 4) {
+            Keys.press(UInt16(kVK_LeftArrow), flags: .maskShift)
+            let selection = await copySelection(pb, timeout: 0.25) ?? last
+            switch walk.next(selection) {
+            case .extend:
+                last = selection
+            case .done(let shrink):
+                guard shrink else { return selection }
+                Keys.press(UInt16(kVK_RightArrow), flags: .maskShift)
+                return await copySelection(pb, timeout: 0.25)
+            case .fail:
+                break steps
+            }
+        }
+        Keys.press(UInt16(kVK_RightArrow), flags: [])  // collapse the selection back to the cursor
+        return nil
     }
 
     /// The hotkey's own modifiers are still down when it fires. False if they are still held after 1.5 s.

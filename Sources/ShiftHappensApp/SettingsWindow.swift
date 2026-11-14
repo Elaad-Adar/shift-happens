@@ -7,6 +7,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let convertRecorder = ShortcutRecorder()
     private let forceRecorder = ShortcutRecorder()
     private let switchBox = NSButton(checkboxWithTitle: "Switch keyboard to the new language after a swap", target: nil, action: nil)
+    private let wordBox = NSButton(checkboxWithTitle: "With nothing selected, fix the word before the cursor", target: nil, action: nil)
     private let loginBox = NSButton(checkboxWithTitle: "Open at login", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
 
@@ -38,6 +39,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         switchBox.target = self
         switchBox.action = #selector(toggleSwitch)
         switchBox.state = s.switchLayoutAfterSwap ? .on : .off
+        wordBox.target = self
+        wordBox.action = #selector(toggleWord)
+        wordBox.state = s.fixWordBeforeCursor ? .on : .off
         loginBox.target = self
         loginBox.action = #selector(toggleLogin)
         loginBox.state = (app?.launchAtLogin ?? false) ? .on : .off
@@ -60,7 +64,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         convertRecorder.widthAnchor.constraint(equalToConstant: 170).isActive = true
         forceRecorder.widthAnchor.constraint(equalToConstant: 170).isActive = true
 
-        let stack = NSStackView(views: [grid, help, switchBox, loginBox, status])
+        let stack = NSStackView(views: [grid, help, wordBox, switchBox, loginBox, status])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 12
@@ -103,6 +107,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     @objc private func clearForce() {
         forceRecorder.shortcut = nil
         saveShortcuts()
+    }
+
+    @objc private func toggleWord() {
+        Settings.shared.fixWordBeforeCursor = wordBox.state == .on
     }
 
     @objc private func toggleSwitch() {
