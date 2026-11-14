@@ -20,7 +20,25 @@ in the Elaad-Adar workspace).
 Both are set in **Settings…** from the menu-bar keyboard icon. `⌃⌥Space` is not the default because macOS
 uses it for "next input source". Undo with `⌘Z` in the app you typed in.
 
-## Build and install (macOS 13+)
+## Install from a release (macOS 13+)
+
+```bash
+gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --dir /tmp/shift-happens --clobber && ditto -x -k /tmp/shift-happens/*-mac.zip /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app" && open "/Applications/Shift Happens.app"
+```
+
+Approve it under System Settings → Privacy & Security → **Accessibility** (once per new version; if an old
+entry is there, run `tccutil reset Accessibility io.github.elaad-adar.shift-happens` first). The app is not
+notarized by Apple, which is why the `xattr` step is needed.
+
+## Release a new version
+
+Merge the change to `main`, then tag it. The `release` workflow tests, builds, and publishes the zip:
+
+```bash
+git tag -a v1.0.1 -m "Shift Happens 1.0.1" && git push origin v1.0.1
+```
+
+## Build and install from source (macOS 13+)
 
 ```bash
 scripts/test.sh
