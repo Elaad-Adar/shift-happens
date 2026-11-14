@@ -56,6 +56,15 @@ public enum MacLayouts {
         return Pair(latin: l, hebrew: h, latinID: id(of: l), hebrewID: id(of: h))
     }
 
+    /// A fixed pair by input-source ID, from all installed layouts (enabled or not). Used by tests and CI,
+    /// whose enabled layouts differ from the user's.
+    public static func pair(latinID: String, hebrewID: String) throws -> Pair {
+        let all = sources(includeAllInstalled: true)
+        guard let l = all.first(where: { id(of: $0) == latinID }) else { throw MacLayoutError.notFound(latinID) }
+        guard let h = all.first(where: { id(of: $0) == hebrewID }) else { throw MacLayoutError.notFound(hebrewID) }
+        return Pair(latin: l, hebrew: h, latinID: latinID, hebrewID: hebrewID)
+    }
+
     /// Character typed by one key on one layout, or nil for keys that type nothing printable.
     public static func character(_ src: TISInputSource, keyCode: Int, shift: Bool) -> String? {
         guard let ptr = TISGetInputSourceProperty(src, kTISPropertyUnicodeKeyLayoutData) else { return nil }

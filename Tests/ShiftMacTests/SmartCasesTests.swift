@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 import ShiftCore
@@ -29,15 +30,22 @@ func loadCases() -> [SmartCase] {
         return s
     }()
 
+    /// Apple ABC + Hebrew, installed on every Mac, so CI runners give the same table as this Mac.
+    static func pair() throws -> MacLayouts.Pair {
+        try MacLayouts.pair(latinID: "com.apple.keylayout.ABC", hebrewID: "com.apple.keylayout.Hebrew")
+    }
+
+    static let hasHebrewSpelling = NSSpellChecker.shared.availableLanguages.contains("he")
+
     @Test func liveLayoutMatchesFixture() throws {
-        let live = MacLayouts.table(try MacLayouts.findPair())
+        let live = MacLayouts.table(try Self.pair())
         let fixture = try LayoutTable.load(from: repoRoot.appendingPathComponent("fixtures/mac-abc-hebrew.json"))
         #expect(live == fixture, "Layouts changed: run `shift-happens --dump-layout > fixtures/mac-abc-hebrew.json`")
     }
 
-    @Test(arguments: loadCases())
+    @Test(.enabled(if: hasHebrewSpelling, "no Hebrew spell checker on this Mac"), arguments: loadCases())
     func smartCase(_ c: SmartCase) throws {
-        let converter = Converter(table: MacLayouts.table(try MacLayouts.findPair()), spell: Self.spell)
+        let converter = Converter(table: MacLayouts.table(try Self.pair()), spell: Self.spell)
         let result = converter.convert(c.in, mode: c.mode == "force" ? .forceSwap : .smart)
         #expect(result.text == c.out, "\(result.notes.joined(separator: " | "))")
     }
