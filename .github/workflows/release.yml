@@ -61,10 +61,15 @@ jobs:
     needs: [mac, windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
+
+      - name: Release notes (changelog section + checksums)
+        run: scripts/release-notes.sh "${GITHUB_REF_NAME#v}" dist > notes.md
 
       - name: Publish release
         env:
@@ -73,4 +78,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" dist/*.zip \
             --repo "$GITHUB_REPOSITORY" \
             --title "Shift Happens $GITHUB_REF_NAME" \
-            --generate-notes
+            --notes-file notes.md
