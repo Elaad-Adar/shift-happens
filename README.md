@@ -1,272 +1,131 @@
-# Shift Happens
+<p align="center">
+  <img src="packaging/logo-gemini.jpeg" width="128" alt="Shift Happens icon">
+</p>
 
-Typed a sentence on the wrong keyboard? Select it, press one hotkey. Nothing selected? The hotkey fixes the
-word just before the cursor.
+<h1 align="center">Shift Happens</h1>
 
-- **Wrong keyboard** (`akuo` instead of `שלום`, `יקךךם` instead of `hello`): the text is swapped key for key
-  to the other layout, and the keyboard switches to the right language.
-- **Right keyboard, typo** (`teh wrold`): misspelled words are fixed with the system spell checker.
-- Mixed text (`I love איןמעד`) swaps only the words that need it.
-- **Nothing selected:** the word just before the cursor is selected and fixed the same way (`akuo|` →
-  `שלום|`). Words with punctuation keys in them (`ba,g` → `נשמע`) are taken whole. The word is found in
-  logical text order through Accessibility (Mac) or UI Automation (Windows), so Hebrew works too; apps that
-  do not expose their text fall back to Shift+Left steps, which are reliable only in left-to-right text.
-  On by default; turn it off in Settings.
+<p align="center">
+  Typed in the wrong keyboard language? Press one hotkey and it is fixed.<br>
+  Hebrew ↔ English, for Mac and Windows. Free and open source.<br>
+  <a href="#בעברית">בעברית</a>
+</p>
 
-Hebrew ↔ English, on macOS (menu-bar app) and Windows (tray app).
+<!-- Demo GIF goes here: docs/media/demo.gif -->
 
-## Use (macOS)
+## What it does
 
-| Action | Default hotkey |
-|---|---|
-| Fix selection (smart: swap or spell-fix) | `⌃⇧Space` |
-| Swap selection (always swap) | not set |
+- **Typed on the wrong keyboard?** `akuo` becomes `שלום`, `יקךךם` becomes `hello`, and your keyboard
+  switches to the right language.
+- **Right keyboard, typo?** `teh` becomes `the`, using your computer's own spell checker.
+- **Nothing selected?** It fixes the word just before the cursor. Select a whole sentence to fix all of it.
+- **Mixed text** (`I love איןמעד`) only changes the words that need it.
+- Undo with `⌘Z` / `Ctrl+Z`, like any edit.
 
-Both are set in **Settings…** from the menu-bar keyboard icon. `⌃⌥Space` is not the default because macOS
-uses it for "next input source". Undo with `⌘Z` in the app you typed in.
+| | Mac | Windows |
+|---|---|---|
+| Hotkey | `⌃⇧Space` (Control+Shift+Space) | `Ctrl+Shift+Space` |
+| Lives in | the menu bar | the tray, next to the clock |
+| Needs | macOS 13 or newer, Apple Silicon or Intel | Windows 10 or 11 (64-bit) |
 
-## Install from a release (macOS 13+, Apple Silicon and Intel)
+Both need an English and a Hebrew keyboard added in the system settings. The hotkey can be changed in
+**Settings…**.
 
-```bash
-D="$(mktemp -d)" && gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --output "$D/shift-happens-mac.zip" && pkill ShiftHappens; ditto -x -k "$D/shift-happens-mac.zip" /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app" && open "/Applications/Shift Happens.app"
-```
+## Download
 
-Approve it under System Settings → Privacy & Security → **Accessibility** (once per new version; if an old
-entry is there, run `tccutil reset Accessibility io.github.elaad-adar.shift-happens` first). The app is not
-notarized by Apple, which is why the `xattr` step is needed.
+**[Download the latest version](https://github.com/Elaad-Adar/shift-happens/releases/latest)**: the file
+ending in `-mac.zip` or `-windows.zip`.
 
-## Windows
-
-| Action | Default hotkey |
-|---|---|
-| Fix selection (smart: swap or spell-fix) | `Ctrl+Shift+Space` |
-| Swap selection (always swap) | not set |
-
-Both are set in **Settings…** from the tray icon (right-click; double-click opens Settings), together with
-"Start with Windows". Undo with `Ctrl+Z` in the app you typed in.
-
-### Install from a release (Windows 10/11, x64)
-
-PowerShell, one command at a time:
-
-```powershell
-gh release download --repo Elaad-Adar/shift-happens --pattern '*-windows.zip' --output "$env:TEMP\shift-happens-windows.zip" --clobber
-```
-
-```powershell
-Stop-Process -Name ShiftHappens -ErrorAction SilentlyContinue
-```
-
-```powershell
-Expand-Archive -Path "$env:TEMP\shift-happens-windows.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\ShiftHappens" -Force
-```
-
-```powershell
-Unblock-File "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
-```
-
-```powershell
-Start-Process "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
-```
-
-Without `gh`: download the `-windows.zip` from the Releases page and unzip it anywhere. The exe is not
-code-signed, so SmartScreen may say "Windows protected your PC": **More info → Run anyway**. It is
-self-contained (no .NET install needed), hence ~70 MB.
-
-Needs an English and a Hebrew keyboard in Settings → Time & language → Language & region. Hebrew typos
-are fixed only if Windows has the Hebrew spell checker (part of the Hebrew language pack); without it the
-app still swaps layouts. Check with:
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --spell שלום he
-```
-
-Command-line checks (run from PowerShell; it does not wait for the exe, so output can appear after the
-next prompt):
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --convert "akuo" --verbose
-& "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe" --dump-layout "$env:TEMP\windows-us-hebrew.json"
-```
-
-If the hotkey is taken by another app (the Claude desktop app uses `Ctrl+Alt+Space`), Shift Happens says so
-at startup and opens Settings to pick another.
-
-Windows does not let a normal app send keys into an app running as administrator; run Shift Happens as
-administrator too if you need that.
-
-### Build from source (Windows, .NET 8 SDK)
-
-```powershell
-cd D:\dev\shift-happens
-```
-
-```powershell
-git pull
-```
-
-```powershell
-cd windows
-```
-
-```powershell
-dotnet test
-```
-
-```powershell
-dotnet publish src\ShiftHappens -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o ..\build\windows
-```
-
-`windows/src/ShiftCore` is a line-for-line port of the Swift `ShiftCore`; its tests run the same cases on
-the Mac layout table, so a change to the decision logic goes into both.
-
-## Updating to a new release
-
-The app checks GitHub once a day (setting "Check for updates once a day", on by default) and, when a
-newer release exists, shows **Update to X.Y.Z…** at the top of its menu and a **Download** button in
-Settings. Both open the release page; the app does not replace itself (it is not code-signed). The check
-only calls GitHub's public `releases/latest` API and sends nothing about you.
-
-The version you have is shown at the top of Settings and at the bottom of the menu. Updating installs
-the new release over the old one; your settings (hotkeys, options) are kept.
+Shift Happens is a free hobby project and is **not code-signed** (signing costs money every year), so
+your computer will warn you the first time. That is expected; here is exactly what to click.
 
 ### Mac
 
-Download and replace (quits the running copy first):
-
-```bash
-D="$(mktemp -d)" && gh release download --repo Elaad-Adar/shift-happens --pattern '*-mac.zip' --output "$D/shift-happens-mac.zip" && pkill ShiftHappens; ditto -x -k "$D/shift-happens-mac.zip" /Applications && xattr -dr com.apple.quarantine "/Applications/Shift Happens.app"
-```
-
-macOS treats every new build as a new app, so approve Accessibility again:
-
-```bash
-tccutil reset Accessibility io.github.elaad-adar.shift-happens; open "/Applications/Shift Happens.app"
-```
-
-Click **Open System Settings** in the pop-up, turn on **Shift Happens**, then restart it:
-
-```bash
-pkill ShiftHappens; open "/Applications/Shift Happens.app"
-```
-
-Without `gh`: quit Shift Happens from its menu, download the `-mac.zip` from the Releases page, unzip it,
-drag **Shift Happens** into Applications and choose **Replace**, then do the Accessibility steps above.
+1. Double-click the downloaded zip, then drag **Shift Happens** into your **Applications** folder.
+2. Open it. macOS says *"Apple could not verify 'Shift Happens'…"*: click **Done**.
+3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to
+   Shift Happens. Confirm. (On macOS 13–14 you can instead right-click the app → **Open** → **Open**.)
+4. Shift Happens asks for **Accessibility** access (needed to copy and paste for you): click
+   **Open System Settings** and turn **Shift Happens** on.
+5. Quit Shift Happens from its menu-bar icon and open it again. Done.
 
 ### Windows
 
-PowerShell, one command at a time (same as installing; `-Force` replaces the old exe):
+1. Right-click the downloaded zip → **Extract All**. Don't run it from inside the zip.
+2. In the extracted folder, run **ShiftHappens.exe**.
+3. If Windows says *"Windows protected your PC"*: click **More info → Run anyway**.
+4. The icon appears next to the clock. Right-click it → **Settings…** → tick **Start with Windows**.
 
-```powershell
-gh release download --repo Elaad-Adar/shift-happens --pattern '*-windows.zip' --output "$env:TEMP\shift-happens-windows.zip" --clobber
-```
+PCs with **Smart App Control** turned on (some new Windows 11 PCs) block unsigned apps completely, with
+no "Run anyway"; Shift Happens cannot run there.
 
-```powershell
-Stop-Process -Name ShiftHappens -ErrorAction SilentlyContinue
-```
+## Using it
 
-```powershell
-Expand-Archive -Path "$env:TEMP\shift-happens-windows.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\ShiftHappens" -Force
-```
+- Select text and press the hotkey. Or don't select anything: it fixes the word before the cursor.
+- **Settings…** (from the menu-bar or tray icon): change the hotkey, add an optional "always swap" hotkey,
+  turn off "fix the word before the cursor", keyboard switching, start at login, update checks.
+- **Check for Updates…**, **Report a Problem…** and **Suggest an Idea…** are in the same menu.
 
-```powershell
-Unblock-File "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
-```
+## Privacy and security
 
-```powershell
-Start-Process "$env:LOCALAPPDATA\Programs\ShiftHappens\ShiftHappens.exe"
-```
+An app that asks for Accessibility and touches your clipboard deserves a straight answer:
 
-Without `gh`: right-click the tray icon → **Quit**, download the `-windows.zip` from the Releases page,
-unzip it over the old `ShiftHappens.exe` (replace), and start it. "Start with Windows" keeps working
-because the exe stays in the same place.
+- It reads text **only when you press the hotkey**: the selection, or the word before the cursor.
+- It **never records your typing**. There is no keyboard hook and no Input Monitoring permission.
+- It puts your clipboard back after each conversion.
+- Its only network call is once a day to GitHub's public "latest release" address, to tell you about
+  updates (you can turn this off). No analytics, no account, nothing about you is sent.
+- The whole app is in this repository, and every download is built by GitHub Actions from the tagged
+  code. Each release lists the SHA-256 checksums of both files.
 
-## Found a bug or have an idea?
+## Updating
 
-In the app's menu (or Settings): **Report a Problem…** or **Suggest an Idea…**. It opens a short form on
-GitHub, in Hebrew and English, with the app version and your computer already filled in. You need a free
-GitHub account to send it. No account? Send it to Elaad on WhatsApp and he files it.
+When a new version is out, the menu shows **Update to X.Y.Z…**. It opens the download page; install the
+new version over the old one (your settings are kept).
 
-## Release a new version
+- **Mac:** quit Shift Happens, drag the new one into Applications and choose **Replace**. macOS treats
+  every new version as a new app, so in **System Settings → Privacy & Security → Accessibility**, select
+  the old **Shift Happens** entry, click **−**, then open the app and allow it again.
+- **Windows:** right-click the tray icon → **Quit**, extract the new zip over the old `ShiftHappens.exe`,
+  and start it.
 
-Merge the change to `main`, then tag it. The `release` workflow tests, builds, and publishes a Mac zip
-and a Windows zip:
+## Questions
 
-```bash
-git tag -a v1.1.0 -m "Shift Happens 1.1.0" && git push origin v1.1.0
-```
+- **Which apps does it work in?** Anywhere you can select and paste text: WhatsApp, Word, Chrome, Mail,
+  Notes, VS Code and so on. Not in terminals, password fields or remote desktops.
+- **Other languages?** Hebrew and English only for now. More languages are planned in
+  [#9](https://github.com/Elaad-Adar/shift-happens/issues/9).
+- **Something went wrong?** `⌘Z` / `Ctrl+Z` undoes it.
+- **The hotkey does nothing?** Another app may own it; Shift Happens says so and lets you pick another
+  in Settings. On the Mac, check that Accessibility is on for it.
 
-## Build and install from source (macOS 13+)
+Known limits: in mixed Hebrew/English text, words of 1–3 letters can be read the wrong way; editors that
+copy the whole line when nothing is selected (JetBrains IDEs) need the word selected by hand; clipboard
+managers see the text for a moment while it is converted.
 
-```bash
-scripts/test.sh
-scripts/build-app.sh
-cp -R "build/Shift Happens.app" /Applications/
-open "/Applications/Shift Happens.app"
-```
+## Feedback
 
-Then allow it in System Settings → Privacy & Security → **Accessibility** (needed to send ⌘C / ⌘V).
+In the app's menu: **Report a Problem…** or **Suggest an Idea…**. It opens a short form here on GitHub
+(Hebrew or English), with the app version and your system filled in. A free GitHub account is needed.
 
-The build is ad-hoc signed unless `SIGN_IDENTITY` is set, and macOS forgets the Accessibility permission
-after each rebuild of an ad-hoc signed app. After a rebuild:
+## בעברית
 
-```bash
-tccutil reset Accessibility io.github.elaad-adar.shift-happens
-open "/Applications/Shift Happens.app"
-```
+**Shift Happens** מתקנת טקסט שנכתב בשפת מקלדת לא נכונה: `akuo` הופך ל־`שלום`, `יקךךם` הופך ל־`hello`,
+והמקלדת עוברת לשפה הנכונה לבד. אם השפה נכונה, היא מתקנת שגיאות כתיב (`teh` ← `the`).
+בלי לסמן כלום היא מתקנת את המילה שלפני הסמן; כדי לתקן משפט שלם, מסמנים אותו.
 
-Approve it in the pop-up, then restart it: `pkill ShiftHappens; open "/Applications/Shift Happens.app"`.
+- **קיצור:** ב־Mac ‏`⌃⇧Space`, ב־Windows ‏`Ctrl+Shift+Space`. אפשר לשנות בהגדרות.
+- **הורדה:** [הגרסה האחרונה](https://github.com/Elaad-Adar/shift-happens/releases/latest), הקובץ שנגמר
+  ב־`-mac.zip` או ב־`-windows.zip`.
+- **אזהרה בהתקנה:** האפליקציה חינמית ולא חתומה, ולכן המחשב מזהיר בפעם הראשונה.
+  - ב־Mac: הגדרות מערכת ← פרטיות ואבטחה ← **Open Anyway**, ואז לאשר גישת נגישות (Accessibility).
+  - ב־Windows: **More info ← Run anyway**.
+  - מחשבים שמופעלת בהם "בקרת אפליקציות חכמה" (Smart App Control) חוסמים אותה לגמרי.
+- **פרטיות:** האפליקציה קוראת טקסט רק כשלוחצים על הקיצור, לא מקליטה הקלדה, ומחזירה את הלוח (clipboard) למצבו.
+  החיבור היחיד לאינטרנט הוא בדיקת עדכונים פעם ביום מול GitHub (אפשר לכבות).
+- **משוב:** בתפריט, **Report a Problem…** או **Suggest an Idea…** (אפשר לכתוב בעברית).
 
-## How it decides
+## License and development
 
-1. Words are grouped by script (Hebrew letters / Latin letters); a group was typed on one keyboard.
-2. Each word is checked as typed and after a key-for-key swap.
-3. Score: known word as typed = 1, typo with a close spelling (3+ letters) = 0.75; known after swap = 1,
-   or 0.5 for swapped words of 1–3 letters (dictionaries accept many short letter strings).
-4. Higher swap score: swap the group. Otherwise fix misspelled words. Nothing known at all: swap.
-5. A 4+ letter word that clearly reads right the other way goes against its group (`hello akuo` →
-   `hello שלום`).
-
-Known limits: VS Code's whole-line copy of an empty selection is recognised (it marks it in the clipboard),
-but editors that copy the line without a mark (JetBrains) look like a selection, so select the word yourself
-there; apps where Shift+Left does not select (terminals)
-just beep; 1–3 letter words in mixed-language text follow their group; apps that block synthetic
-copy/paste (some password fields, remote desktops) are not supported; clipboard managers see the
-temporary clipboard content.
-
-## Layout table
-
-Never typed by hand: read from the installed layouts with `UCKeyTranslate`.
-`fixtures/mac-abc-hebrew.json` is this table for Apple ABC + Hebrew; refresh it with:
-
-```bash
-.build/debug/shift-happens --dump-layout > fixtures/mac-abc-hebrew.json
-```
-
-## Icon
-
-`packaging/logo-gemini.jpeg` is the source artwork (made with Gemini). Its transparent background is painted
-in, so `scripts/make-icon.swift` cuts the rounded square out and builds `packaging/AppIcon.icns`:
-
-```bash
-swift scripts/make-icon.swift packaging/logo-gemini.jpeg build/AppIcon.iconset && iconutil -c icns build/AppIcon.iconset -o packaging/AppIcon.icns
-```
-
-The menu-bar glyph is drawn in code (`Sources/ShiftHappensApp/MenuBarIcon.swift`). The Windows icon
-`packaging/app.ico` comes from the same artwork: `scripts/make-ico.sh`.
-
-## Command line (debugging)
-
-```bash
-.build/debug/shift-happens --convert "akuo' nv ba,g?" --verbose
-.build/debug/shift-happens --convert "hello" --force
-.build/debug/shift-happens --spell שלומ he
-```
-
-## Layout
-
-- `Sources/ShiftCore`: mapping and decision logic, no AppKit (`swift test` covers it with a fake dictionary).
-- `Sources/ShiftMac`: layout reading and the macOS spell checker.
-- `Sources/ShiftHappensApp`: menu-bar app, hotkeys, clipboard, settings.
-- `fixtures/`: layout table and `smart-cases.json`, run against the real spell checker.
-- `windows/`: the Windows app (`src/ShiftCore` logic, `src/ShiftHappens` tray app, `tests/`).
+MIT license, see [LICENSE](LICENSE). Made by Elaad Adar. Changes per version are in
+[CHANGELOG.md](CHANGELOG.md); building, testing and releasing are in
+[docs/DEVELOPING.md](docs/DEVELOPING.md).
