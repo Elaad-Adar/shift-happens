@@ -12,6 +12,11 @@
 
 <!-- Demo GIF goes here: docs/media/demo.gif -->
 
+**Contents:** [What it does](#what-it-does) · [Download](#download) · [Mac](#mac) · [Windows](#windows) ·
+[Using it](#using-it) · [Privacy and security](#privacy-and-security) · [Updating](#updating) ·
+[Questions](#questions) · [Feedback](#feedback) · [בעברית](#בעברית) ·
+[License and development](#license-and-development)
+
 ## What it does
 
 - **Typed on the wrong keyboard?** `akuo` becomes `שלום`, `יקךךם` becomes `hello`, and your keyboard
