@@ -10,7 +10,9 @@
   <a href="#בעברית">בעברית</a>
 </p>
 
-<!-- Demo GIF goes here: docs/media/demo.gif -->
+<p align="center">
+  <img src="docs/media/demo.gif" width="820" alt="Demo: a Hebrew sentence typed on the English keyboard becomes Hebrew, an English line typed on the Hebrew keyboard becomes English, and 'i realy like tihs app' becomes 'i really like this app'">
+</p>
 
 **Contents:** [What it does](#what-it-does) · [Download](#download) · [Mac](#mac) · [Windows](#windows) ·
 [Using it](#using-it) · [Privacy and security](#privacy-and-security) · [Updating](#updating) ·
