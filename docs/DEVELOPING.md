@@ -110,5 +110,11 @@ Apple ABC + Hebrew; refresh it with `.build/debug/shift-happens --dump-layout > 
 
 4. The `release` workflow tests, builds both apps, and publishes the release with the changelog section
    and SHA-256 checksums.
-5. Upload both zips at [virustotal.com](https://www.virustotal.com) and add the two report links to the
-   release notes.
+5. VirusTotal ([virustotal.com](https://www.virustotal.com), free): upload the **Mac zip** as is, and for
+   Windows upload **`ShiftHappens.exe` from inside the zip** (VirusTotal only looks inside archives up
+   to 3 MB, and the Windows zip is ~67 MB). Add both report links, the exe's SHA-256 and any detection
+   to the release notes (`gh release edit vX.Y.Z --notes-file …`). Report a false positive to that
+   vendor (contacts: docs.virustotal.com/docs/false-positive-contacts).
+
+The demo GIF (`docs/media/demo.gif`) is a screen recording converted with AVFoundation + ImageIO
+(cropped, 1.5x speed, 10 fps); no extra tools needed.
