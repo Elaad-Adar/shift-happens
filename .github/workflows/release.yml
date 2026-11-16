@@ -1,6 +1,8 @@
 name: release
 
 # Push a tag like v1.1.0 to build both apps and publish a GitHub Release with a Mac zip and a Windows zip.
+# The zips have no version in their names, so releases/latest/download/Shift-Happens-mac.zip (the README's
+# download buttons) always gets the newest one.
 on:
   push:
     tags: ["v*"]
@@ -23,7 +25,7 @@ jobs:
       - name: Zip
         run: |
           mkdir -p dist
-          ditto -c -k --keepParent "build/Shift Happens.app" "dist/Shift-Happens-${GITHUB_REF_NAME#v}-mac.zip"
+          ditto -c -k --keepParent "build/Shift Happens.app" "dist/Shift-Happens-mac.zip"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -50,7 +52,7 @@ jobs:
             -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:Version=$v -o out
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path out/ShiftHappens.exe -DestinationPath "dist/Shift-Happens-$v-windows.zip"
+          Compress-Archive -Path out/ShiftHappens.exe -DestinationPath "dist/Shift-Happens-windows.zip"
 
       - uses: actions/upload-artifact@v7
         with:

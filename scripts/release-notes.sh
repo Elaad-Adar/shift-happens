@@ -20,6 +20,8 @@ fi
 
 if command -v sha256sum >/dev/null; then sum() { sha256sum "$@"; }; else sum() { shasum -a 256 "$@"; }; fi
 
+# This version's download count (GitHub's own counter, through shields.io).
+printf '[![Downloads](https://img.shields.io/github/downloads/Elaad-Adar/shift-happens/v%s/total?label=downloads)](https://github.com/Elaad-Adar/shift-happens/releases/tag/v%s)\n\n' "$version" "$version"
 printf '%s\n\n' "$section"
 printf '### Downloads\n\n'
 printf 'Install steps are in the [README](https://github.com/Elaad-Adar/shift-happens#download).\n\n'
