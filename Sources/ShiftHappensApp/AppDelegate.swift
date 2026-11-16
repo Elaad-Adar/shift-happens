@@ -100,8 +100,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        let fixKeys = [s.convertShortcut?.display, s.doubleTapKey.map { $0.symbol + " " + $0.symbol }].compactMap { $0 }
-        let convert = NSMenuItem(title: "Fix selection" + (fixKeys.isEmpty ? "" : "  (\(fixKeys.joined(separator: ", ")))"),
+        // Either trigger runs Fix, so "or", not a list.
+        let fixKeys = [s.convertShortcut?.display, s.doubleTapKey.map { $0.symbol + $0.symbol }].compactMap { $0 }
+        let convert = NSMenuItem(title: "Fix selection" + (fixKeys.isEmpty ? "" : "  (\(fixKeys.joined(separator: " or ")))"),
                                  action: #selector(menuConvert), keyEquivalent: "")
         convert.target = self
         menu.addItem(convert)

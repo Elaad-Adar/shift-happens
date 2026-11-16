@@ -89,13 +89,13 @@ sealed class TrayApp : ApplicationContext
             HotkeyProblems.Add($"Double-tap {key} could not be turned on");
     }
 
-    /// <summary>"Ctrl+Shift+Space, Ctrl Ctrl" for the menu.</summary>
+    /// <summary>"Ctrl+Shift+Space or Ctrl Ctrl" for the menu: either one runs Fix.</summary>
     string? FixKeys()
     {
         var keys = new List<string>();
         if (_settings.ConvertShortcut is { } c) keys.Add(c.Display);
         if (_settings.DoubleTapKey is { } d) keys.Add($"{d} {d}");
-        return keys.Count == 0 ? null : string.Join(", ", keys);
+        return keys.Count == 0 ? null : string.Join(" or ", keys);
     }
 
     void BuildMenu(ContextMenuStrip menu)

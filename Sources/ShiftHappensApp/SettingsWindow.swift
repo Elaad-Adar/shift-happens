@@ -57,6 +57,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
         let clearForce = NSButton(title: "Clear", target: self, action: #selector(clearForce))
         clearForce.bezelStyle = .rounded
+        let clearConvert = NSButton(title: "Clear", target: self, action: #selector(clearConvert))
+        clearConvert.bezelStyle = .rounded
 
         switchBox.target = self
         switchBox.action = #selector(toggleSwitch)
@@ -82,7 +84,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         help.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
 
         let grid = NSGridView(views: [
-            [NSTextField(labelWithString: "Fix selection:"), convertRecorder, NSGridCell.emptyContentView],
+            [NSTextField(labelWithString: "Fix selection:"), convertRecorder, clearConvert],
             [NSTextField(labelWithString: "Swap selection:"), forceRecorder, clearForce],
             [NSTextField(labelWithString: "Double-tap for Fix:"), doubleTapPopup, NSGridCell.emptyContentView],
         ])
@@ -202,6 +204,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private func refreshStatus() {
         status.stringValue = (app?.hotkeyProblems ?? []).joined(separator: "\n")
         refreshHint()
+    }
+
+    /// Lets the double tap be the only way to run Fix.
+    @objc private func clearConvert() {
+        convertRecorder.shortcut = nil
+        saveShortcuts()
     }
 
     @objc private func clearForce() {
