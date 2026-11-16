@@ -43,6 +43,9 @@ sealed class DoubleTapMonitor : IDisposable
     IntPtr _hook;
     TapDetector _detector = new();
     uint[] _targets = Array.Empty<uint>();
+    /// <summary>Left/right Shift, Ctrl, Alt and Win.</summary>
+    static readonly uint[] Modifiers = { 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C };
+    readonly HashSet<uint> _othersHeld = new();
     Action? _action;
     SynchronizationContext? _ui;
 
@@ -64,6 +67,7 @@ sealed class DoubleTapMonitor : IDisposable
         _action = action;
         _ui = SynchronizationContext.Current;
         _detector = new TapDetector();
+        _othersHeld.Clear();
         using var module = Process.GetCurrentProcess().MainModule;
         _hook = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(module?.ModuleName), 0);
         return _hook != IntPtr.Zero;
@@ -89,10 +93,17 @@ sealed class DoubleTapMonitor : IDisposable
                 bool down = msg is WM_KEYDOWN or WM_SYSKEYDOWN;
                 bool up = msg is WM_KEYUP or WM_SYSKEYUP;
                 bool target = Array.IndexOf(_targets, k.vkCode) >= 0;
-                TapDetector.Event? e = target ? (down ? TapDetector.Event.Down : up ? TapDetector.Event.Up : null)
-                    : down ? TapDetector.Event.Other : null;
+                // A release can be missed (Win+L switches to the lock screen), so drop keys that are up now.
+                _othersHeld.RemoveWhere(vk => (Native.GetAsyncKeyState((int)vk) & 0x8000) == 0);
+                // Remember which other modifiers are down, so a chord (Ctrl held, Shift tapped) never counts.
+                if (!target && Array.IndexOf(Modifiers, k.vkCode) >= 0)
+                {
+                    if (down) _othersHeld.Add(k.vkCode);
+                    else if (up) _othersHeld.Remove(k.vkCode);
+                }
                 // Run the action after the hook returns: the hook must answer fast, and the action sends keys.
-                if (e is { } ev && _detector.Feed(ev, k.time / 1000.0) && _action is { } a)
+                if ((down || up) && _detector.FeedKey(target, down, _othersHeld.Count > 0, k.time / 1000.0)
+                    && _action is { } a)
                     _ui?.Post(_ => a(), null);
             }
         }

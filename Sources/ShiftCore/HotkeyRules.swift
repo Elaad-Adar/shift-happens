@@ -55,4 +55,15 @@ public struct TapDetector {
         }
         return false
     }
+
+    /// Feeds one key transition. `isTarget`: the watched modifier went down or up. `othersHeld`: another
+    /// modifier is still down at that moment. Any other key, or the watched key used in a chord
+    /// (Ctrl+Shift, Shift released first, then Ctrl), cancels the tap in progress.
+    public mutating func feedKey(isTarget: Bool, isDown: Bool, othersHeld: Bool, at t: TimeInterval) -> Bool {
+        guard isTarget, !othersHeld else {
+            state = .idle
+            return false
+        }
+        return feed(isDown ? .down : .up, at: t)
+    }
 }

@@ -13,6 +13,7 @@ final class DoubleTapMonitor {
     private var localMonitor: Any?
     private var detector = TapDetector()
     private var target: NSEvent.ModifierFlags = []
+    private var targetKeyCodes: Set<UInt16> = []
     private var keyPresses: UInt32 = 0
     private var action: (() -> Void)?
 
@@ -21,6 +22,7 @@ final class DoubleTapMonitor {
     func start(_ key: DoubleTapKey, action: @escaping () -> Void) {
         stop()
         target = key.flag
+        targetKeyCodes = key.keyCodes
         self.action = action
         detector = TapDetector()
         keyPresses = Self.keyPressCount()
@@ -54,8 +56,11 @@ final class DoubleTapMonitor {
             keyPresses = presses
             _ = detector.feed(.other, at: t)  // a key was typed since the last modifier change (⌃C)
         }
+        // keyCode says which modifier changed; the flags say what is held now.
         let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        let kind: TapDetector.Event = flags == target ? .down : (flags.isEmpty ? .up : .other)
-        if detector.feed(kind, at: t) { action?() }
+        let fired = detector.feedKey(isTarget: targetKeyCodes.contains(event.keyCode),
+                                     isDown: flags.contains(target),
+                                     othersHeld: !flags.subtracting(target).isEmpty, at: t)
+        if fired { action?() }
     }
 }

@@ -48,3 +48,27 @@ extension TapDetectorTests {
         #expect(fired([(.down, 0), (.down, 0.03), (.up, 0.1), (.down, 0.2), (.up, 0.3)]) == [4])
     }
 }
+
+@Suite struct TapDetectorChordTests {
+    /// (isTarget, isDown, othersHeld, time)
+    func fired(_ keys: [(Bool, Bool, Bool, Double)]) -> [Int] {
+        var d = TapDetector()
+        return keys.enumerated().compactMap { i, k in d.feedKey(isTarget: k.0, isDown: k.1, othersHeld: k.2, at: k.3) ? i : nil }
+    }
+
+    @Test func plainDoubleTapFires() {
+        #expect(fired([(true, true, false, 0), (true, false, false, 0.1), (true, true, false, 0.2), (true, false, false, 0.3)]) == [3])
+    }
+
+    @Test func chordReleaseThenOneTapDoesNotFire() {
+        // Ctrl down, Shift down, Shift up (Ctrl still held), Ctrl up, then one quick Ctrl tap.
+        #expect(fired([(true, true, false, 0), (false, true, true, 0.02), (false, false, true, 0.08),
+                       (true, false, false, 0.12), (true, true, false, 0.2), (true, false, false, 0.28)]).isEmpty)
+    }
+
+    @Test func tapsWhileAnotherModifierIsHeldDoNotFire() {
+        // Ctrl held the whole time, Shift (the target) tapped twice.
+        #expect(fired([(false, true, false, 0), (true, true, true, 0.05), (true, false, true, 0.1),
+                       (true, true, true, 0.2), (true, false, true, 0.3), (false, false, false, 0.4)]).isEmpty)
+    }
+}

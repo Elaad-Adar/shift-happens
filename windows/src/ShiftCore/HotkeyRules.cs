@@ -44,4 +44,17 @@ public sealed class TapDetector
                 return fired;
         }
     }
+
+    /// <summary>Feeds one key transition. <paramref name="isTarget"/>: the watched modifier went down or up.
+    /// <paramref name="othersHeld"/>: another modifier is still down at that moment. Any other key, or the
+    /// watched key used in a chord (Ctrl held while Shift is tapped), cancels the tap in progress.</summary>
+    public bool FeedKey(bool isTarget, bool isDown, bool othersHeld, double t)
+    {
+        if (!isTarget || othersHeld)
+        {
+            _state = State.Idle;
+            return false;
+        }
+        return Feed(isDown ? Event.Down : Event.Up, t);
+    }
 }

@@ -127,6 +127,16 @@ enum DoubleTapKey: String, CaseIterable {
         }
     }
 
+    /// Left and right key codes of this modifier (kVK_Control, kVK_RightControl, ...).
+    var keyCodes: Set<UInt16> {
+        switch self {
+        case .control: return [59, 62]
+        case .option: return [58, 61]
+        case .shift: return [56, 60]
+        case .command: return [55, 54]
+        }
+    }
+
     var symbol: String {
         switch self {
         case .control: return "⌃"

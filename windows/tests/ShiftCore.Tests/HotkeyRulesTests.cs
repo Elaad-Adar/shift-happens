@@ -58,3 +58,26 @@ public class TapDetectorTests
     public void TripleTapFiresOnce() =>
         Assert.Equal(new[] { 3 }, Fired((D, 0), (U, 0.1), (D, 0.2), (U, 0.3), (D, 0.4), (U, 0.5)));
 }
+
+public class TapDetectorChordTests
+{
+    static int[] Fired(params (bool Target, bool Down, bool Others, double T)[] keys)
+    {
+        var d = new TapDetector();
+        return keys.Select((k, i) => d.FeedKey(k.Target, k.Down, k.Others, k.T) ? i : -1).Where(i => i >= 0).ToArray();
+    }
+
+    [Fact]
+    public void PlainDoubleTapFires() =>
+        Assert.Equal(new[] { 3 }, Fired((true, true, false, 0), (true, false, false, 0.1), (true, true, false, 0.2), (true, false, false, 0.3)));
+
+    [Fact]
+    public void ChordReleaseThenOneTapDoesNotFire() =>
+        Assert.Empty(Fired((true, true, false, 0), (false, true, true, 0.02), (false, false, true, 0.08),
+                           (true, false, false, 0.12), (true, true, false, 0.2), (true, false, false, 0.28)));
+
+    [Fact]
+    public void TapsWhileAnotherModifierIsHeldDoNotFire() =>
+        Assert.Empty(Fired((false, true, false, 0), (true, true, true, 0.05), (true, false, true, 0.1),
+                           (true, true, true, 0.2), (true, false, true, 0.3), (false, false, false, 0.4)));
+}
