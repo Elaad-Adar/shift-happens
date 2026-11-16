@@ -15,6 +15,8 @@ sealed class SettingsForm : Form
     readonly Label _updateStatus = new() { AutoSize = true, ForeColor = SystemColors.GrayText };
     readonly Button _updateButton = new() { Text = "Check now", AutoSize = true };
     readonly Label _status = new() { AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(420, 0) };
+    readonly Label _hint = new() { AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(420, 0) };
+    readonly ComboBox _doubleTapBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
 
     public SettingsForm(TrayApp app)
     {
@@ -35,9 +37,28 @@ sealed class SettingsForm : Form
         _forceBox.Shortcut = s.ForceSwapShortcut;
         foreach (var box in new[] { _convertBox, _forceBox })
         {
-            box.Enter += (_, _) => _app.PauseHotKeys();
+            box.Enter += (_, _) =>
+            {
+                _app.PauseHotKeys();
+                _hint.Text = "Press the new shortcut: Ctrl, Alt or Win with a key, or an F key alone.";
+            };
             box.Leave += (_, _) => Save();
+            box.Rejected += key => _hint.Text =
+                $"{key} alone can't be a shortcut, it would fire while you type. Add Ctrl, Alt or Win, or use an F key.";
+            box.Recorded += RefreshHint;
         }
+
+        _doubleTapBox.Items.Add("Off");
+        foreach (var key in Enum.GetValues<DoubleTapKey>()) _doubleTapBox.Items.Add(key.ToString());
+        _doubleTapBox.SelectedIndex = s.DoubleTapKey is { } dt ? (int)dt + 1 : 0;
+        _doubleTapBox.SelectedIndexChanged += (_, _) =>
+        {
+            s.DoubleTapKey = _doubleTapBox.SelectedIndex > 0 ? (DoubleTapKey)(_doubleTapBox.SelectedIndex - 1) : null;
+            s.Save();
+            _app.RegisterHotKeys();
+            _app.ApplyDoubleTap();
+            RefreshStatus();
+        };
         // Leave does not fire when the whole window loses focus, so re-register here too,
         // and pause again if the user comes back into a hotkey box.
         Deactivate += (_, _) => Save();
@@ -66,8 +87,13 @@ sealed class SettingsForm : Form
             AutoSize = true,
             MaximumSize = new Size(420, 0),
             ForeColor = SystemColors.GrayText,
-            Text = "Click a box and press the new keys (needs Ctrl, Alt or Win). " +
-                   "Fix: wrong keyboard → swaps the text; right keyboard → fixes spelling. Swap: always swaps.",
+            Text = "Click a box and press the new keys (Ctrl, Alt or Win with a key, or an F key alone).\n\n" +
+                   "Fix: typed on the wrong keyboard → swaps it; right keyboard → fixes spelling.\n" +
+                   "    akuo → שלום,  teh → the\n" +
+                   "Swap: always swaps key for key, no spell check. For when Fix guesses wrong.\n" +
+                   "    teh → אקי\n" +
+                   "Double-tap: off by default. When on, Shift Happens uses a keyboard hook to notice the " +
+                   "double tap; it looks only at the chosen key and keeps nothing.",
         };
 
         var grid = new TableLayoutPanel { ColumnCount = 3, AutoSize = true, Dock = DockStyle.Top };
@@ -77,6 +103,8 @@ sealed class SettingsForm : Form
         grid.Controls.Add(new Label { Text = "Swap selection:", AutoSize = true, Anchor = AnchorStyles.Right }, 0, 1);
         grid.Controls.Add(_forceBox, 1, 1);
         grid.Controls.Add(clearForce, 2, 1);
+        grid.Controls.Add(new Label { Text = "Double-tap for Fix:", AutoSize = true, Anchor = AnchorStyles.Right }, 0, 2);
+        grid.Controls.Add(_doubleTapBox, 1, 2);
 
         var stack = new FlowLayoutPanel
         {
@@ -122,7 +150,7 @@ sealed class SettingsForm : Form
 
         stack.Controls.AddRange(new Control[]
         {
-            versionRow, _updateStatus, grid, help, _wordBox, _switchBox, _startupBox, _updatesBox, feedbackRow, _status,
+            versionRow, _updateStatus, grid, _hint, help, _wordBox, _switchBox, _startupBox, _updatesBox, feedbackRow, _status,
         });
         Controls.Add(stack);
         RefreshStatus();
@@ -153,7 +181,20 @@ sealed class SettingsForm : Form
         }
     }
 
-    void RefreshStatus() => _status.Text = string.Join(Environment.NewLine, _app.HotkeyProblems);
+    void RefreshStatus()
+    {
+        _status.Text = string.Join(Environment.NewLine, _app.HotkeyProblems);
+        RefreshHint();
+    }
+
+    /// <summary>A note under the shortcuts when an F key alone is used, else nothing.</summary>
+    void RefreshHint()
+    {
+        var bare = new[] { _convertBox.Shortcut, _forceBox.Shortcut }.OfType<Shortcut>().Where(x => x.IsBareFunctionKey).ToList();
+        _hint.Text = bare.Count == 0 ? "" :
+            string.Join(", ", bare.Select(x => x.Display)) + " alone works in every app. F10 alone normally opens app " +
+            "menus, and some programs (like Visual Studio) use F keys.";
+    }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
@@ -172,6 +213,10 @@ sealed class SettingsForm : Form
 sealed class HotkeyBox : TextBox
 {
     Shortcut? _shortcut;
+
+    /// <summary>A key without Ctrl, Alt or Win (and not an F key) was pressed; gives its name.</summary>
+    public event Action<string>? Rejected;
+    public event Action? Recorded;
 
     public HotkeyBox()
     {
@@ -204,12 +249,15 @@ sealed class HotkeyBox : TextBox
         if ((Native.GetAsyncKeyState(Native.VK_LWIN) & 0x8000) != 0 || (Native.GetAsyncKeyState(Native.VK_RWIN) & 0x8000) != 0)
             mods |= Native.MOD_WIN;
 
-        if ((mods & (Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_WIN)) == 0)
+        var candidate = new Shortcut(mods, (uint)key);
+        if (!HotkeyRule.Allowed((mods & (Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_WIN)) != 0, candidate.IsFunctionKey))
         {
-            System.Media.SystemSounds.Beep.Play();  // a hotkey needs Ctrl, Alt or Win
+            System.Media.SystemSounds.Beep.Play();
+            Rejected?.Invoke(candidate.Display);
             return true;
         }
-        Shortcut = new Shortcut(mods, (uint)key);
+        Shortcut = candidate;
+        Recorded?.Invoke();
         return true;
     }
 }

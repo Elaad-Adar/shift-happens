@@ -29,7 +29,19 @@ struct Shortcut: Codable, Equatable {
         UInt32(kVK_F1): "F1", UInt32(kVK_F2): "F2", UInt32(kVK_F3): "F3", UInt32(kVK_F4): "F4",
         UInt32(kVK_F5): "F5", UInt32(kVK_F6): "F6", UInt32(kVK_F7): "F7", UInt32(kVK_F8): "F8",
         UInt32(kVK_F9): "F9", UInt32(kVK_F10): "F10", UInt32(kVK_F11): "F11", UInt32(kVK_F12): "F12",
+        UInt32(kVK_F13): "F13", UInt32(kVK_F14): "F14", UInt32(kVK_F15): "F15", UInt32(kVK_F16): "F16",
+        UInt32(kVK_F17): "F17", UInt32(kVK_F18): "F18", UInt32(kVK_F19): "F19", UInt32(kVK_F20): "F20",
     ]
+
+    /// Key codes of F1–F20. One of these alone may be a hotkey.
+    static let functionKeys: Set<UInt32> = Set(keyNames.compactMap { $0.value.hasPrefix("F") ? $0.key : nil })
+
+    var isFunctionKey: Bool { Self.functionKeys.contains(keyCode) }
+
+    /// An F key with no modifier: it works in every app, so Settings warns about it.
+    var isBareFunctionKey: Bool {
+        isFunctionKey && flags.intersection([.command, .option, .control, .shift]).isEmpty
+    }
 
     var display: String {
         var s = ""
@@ -88,9 +100,48 @@ final class Settings {
         set { defaults.set(newValue, forKey: "checkForUpdates") }
     }
 
+    /// Modifier whose double tap runs Fix, or nil (default). When set, the app watches modifier-key
+    /// changes (not letters) to see the double tap.
+    var doubleTapKey: DoubleTapKey? {
+        get { defaults.string(forKey: "doubleTapKey").flatMap(DoubleTapKey.init(rawValue:)) }
+        set { defaults.set(newValue?.rawValue, forKey: "doubleTapKey") }
+    }
+
     /// Switch the active keyboard to the language of the swapped text.
     var switchLayoutAfterSwap: Bool {
         get { defaults.object(forKey: "switchLayoutAfterSwap") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "switchLayoutAfterSwap") }
+    }
+}
+
+/// Modifier keys that can be double-tapped to run Fix.
+enum DoubleTapKey: String, CaseIterable {
+    case control, option, shift, command
+
+    var flag: NSEvent.ModifierFlags {
+        switch self {
+        case .control: return .control
+        case .option: return .option
+        case .shift: return .shift
+        case .command: return .command
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .control: return "⌃"
+        case .option: return "⌥"
+        case .shift: return "⇧"
+        case .command: return "⌘"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .control: return "⌃ Control"
+        case .option: return "⌥ Option"
+        case .shift: return "⇧ Shift"
+        case .command: return "⌘ Command"
+        }
     }
 }

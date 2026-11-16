@@ -12,6 +12,7 @@ sealed class TrayApp : ApplicationContext
     readonly Settings _settings = Settings.Load();
     readonly SelectionConverter _selection;
     readonly HotKeys _hotKeys = new();
+    readonly DoubleTapMonitor _doubleTap = new();
     readonly NotifyIcon _tray;
     SettingsForm? _settingsForm;
 
@@ -40,6 +41,7 @@ sealed class TrayApp : ApplicationContext
         _tray.MouseDoubleClick += (_, _) => OpenSettings();
 
         RegisterHotKeys();
+        ApplyDoubleTap();
         Updates.Start();
 
         // Keyboards added or removed in Windows settings.
@@ -79,6 +81,23 @@ sealed class TrayApp : ApplicationContext
 
     public void PauseHotKeys() => _hotKeys.UnregisterAll();
 
+    /// <summary>Starts or stops the double-tap keyboard hook, per Settings (off by default).</summary>
+    public void ApplyDoubleTap()
+    {
+        _doubleTap.Stop();
+        if (_settings.DoubleTapKey is { } key && !_doubleTap.Start(key, () => _selection.Run(Mode.Smart)))
+            HotkeyProblems.Add($"Double-tap {key} could not be turned on");
+    }
+
+    /// <summary>"Ctrl+Shift+Space, Ctrl Ctrl" for the menu.</summary>
+    string? FixKeys()
+    {
+        var keys = new List<string>();
+        if (_settings.ConvertShortcut is { } c) keys.Add(c.Display);
+        if (_settings.DoubleTapKey is { } d) keys.Add($"{d} {d}");
+        return keys.Count == 0 ? null : string.Join(", ", keys);
+    }
+
     void BuildMenu(ContextMenuStrip menu)
     {
         menu.Items.Clear();
@@ -89,7 +108,7 @@ sealed class TrayApp : ApplicationContext
         }
         menu.Items.Add(new ToolStripMenuItem("Fix selection", null, (_, _) => RunFromMenu(Mode.Smart))
         {
-            ShortcutKeyDisplayString = _settings.ConvertShortcut?.Display,
+            ShortcutKeyDisplayString = FixKeys(),
         });
         menu.Items.Add(new ToolStripMenuItem("Swap selection", null, (_, _) => RunFromMenu(Mode.ForceSwap))
         {
@@ -130,6 +149,7 @@ sealed class TrayApp : ApplicationContext
     {
         SystemEvents.UserPreferenceChanged -= OnPreferenceChanged;
         _hotKeys.Dispose();
+        _doubleTap.Dispose();
         _tray.Visible = false;
         _tray.Dispose();
         ExitThread();

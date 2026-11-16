@@ -35,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
 
         registerHotKeys()
+        applyDoubleTap()
 
         // Re-read layouts when the user adds or removes an input source.
         DistributedNotificationCenter.default().addObserver(
@@ -69,6 +70,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func pauseHotKeys() { HotKeys.shared.unregisterAll() }
 
+    /// Starts or stops watching for the double-tap shortcut, per Settings (off by default).
+    func applyDoubleTap() {
+        if let key = Settings.shared.doubleTapKey {
+            DoubleTapMonitor.shared.start(key) { [weak self] in self?.convert(.smart) }
+        } else {
+            DoubleTapMonitor.shared.stop()
+        }
+    }
+
     private func convert(_ mode: Mode) {
         guard AXIsProcessTrusted() else {
             askForAccessibility()
@@ -90,7 +100,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        let convert = NSMenuItem(title: "Fix selection" + suffix(s.convertShortcut),
+        let fixKeys = [s.convertShortcut?.display, s.doubleTapKey.map { $0.symbol + " " + $0.symbol }].compactMap { $0 }
+        let convert = NSMenuItem(title: "Fix selection" + (fixKeys.isEmpty ? "" : "  (\(fixKeys.joined(separator: ", ")))"),
                                  action: #selector(menuConvert), keyEquivalent: "")
         convert.target = self
         menu.addItem(convert)
