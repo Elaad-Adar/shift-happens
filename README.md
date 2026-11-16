@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="packaging/logo-gemini.jpeg" width="128" alt="Shift Happens icon">
+  <img src="docs/media/icon.png" width="128" alt="Shift Happens icon">
 </p>
 
 <h1 align="center">Shift Happens</h1>
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-mac.zip"><img src="https://img.shields.io/badge/Download_for_Mac-macOS_13%2B-1f6feb?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
+  <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-mac.zip"><img src="https://img.shields.io/badge/Download_for_Mac-macOS_13%2B-1f6feb?style=for-the-badge" alt="Download for Mac"></a>
   &nbsp;
   <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-windows.zip"><img src="https://img.shields.io/badge/Download_for_Windows-10_%7C_11-1f6feb?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
   <br>
