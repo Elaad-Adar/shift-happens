@@ -11,6 +11,21 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-mac.zip"><img src="https://img.shields.io/badge/Download_for_Mac-macOS_13%2B-1f6feb?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
+  &nbsp;
+  <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-windows.zip"><img src="https://img.shields.io/badge/Download_for_Windows-10_%7C_11-1f6feb?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
+  <br>
+  <sub>Free, not code-signed: see <a href="#download">what to click the first time</a>.</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Elaad-Adar/shift-happens/releases"><img src="https://img.shields.io/github/downloads/Elaad-Adar/shift-happens/total?label=downloads" alt="Downloads"></a>
+  <a href="https://github.com/Elaad-Adar/shift-happens/releases/latest"><img src="https://img.shields.io/github/v/release/Elaad-Adar/shift-happens?label=latest" alt="Latest version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Elaad-Adar/shift-happens" alt="License: MIT"></a>
+  <a href="https://github.com/Elaad-Adar/shift-happens/actions/workflows/ci.yml"><img src="https://github.com/Elaad-Adar/shift-happens/actions/workflows/ci.yml/badge.svg?branch=main" alt="Build"></a>
+</p>
+
+<p align="center">
   <img src="docs/media/demo.gif" width="820" alt="Demo: a Hebrew sentence typed on the English keyboard becomes Hebrew, an English line typed on the Hebrew keyboard becomes English, and 'i realy like tihs app' becomes 'i really like this app'">
 </p>
 
@@ -40,8 +55,9 @@ of Ctrl, Alt (⌥), Shift or ⌘.
 
 ## Download
 
-**[Download the latest version](https://github.com/Elaad-Adar/shift-happens/releases/latest)**: the file
-ending in `-mac.zip` or `-windows.zip`.
+**[Download for Mac](https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-mac.zip)** ·
+**[Download for Windows](https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-windows.zip)** ·
+[all versions](https://github.com/Elaad-Adar/shift-happens/releases)
 
 Shift Happens is a free hobby project and is **not code-signed** (signing costs money every year), so
 your computer will warn you the first time. That is expected; here is exactly what to click.
@@ -142,8 +158,8 @@ In the app's menu: **Report a Problem…** or **Suggest an Idea…**. It opens a
 - **ההבדל בין Fix ל־Swap:** מצב Fix מחליט לבד. אם הקלדת במקלדת הלא נכונה, הוא הופך את הטקסט, למשל akuo
   הופך לשלום. אם המקלדת הייתה נכונה, הוא מתקן שגיאת כתיב, למשל teh הופך ל־the.
   מצב Swap תמיד הופך מקש למקש, בלי בדיקת איות, למשל teh הופך לאקי.
-- **הורדה:** [הגרסה האחרונה](https://github.com/Elaad-Adar/shift-happens/releases/latest), הקובץ שנגמר
-  ב־`-mac.zip` או ב־`-windows.zip`.
+- **הורדה:** [ל־Mac](https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-mac.zip) ·
+  [ל־Windows](https://github.com/Elaad-Adar/shift-happens/releases/latest/download/Shift-Happens-windows.zip)
 - **אזהרה בהתקנה:** האפליקציה חינמית ולא חתומה, ולכן המחשב מזהיר בפעם הראשונה.
   - ב־Mac: הגדרות מערכת ← פרטיות ואבטחה ← **Open Anyway**, ואז לאשר גישת נגישות (Accessibility).
   - ב־Windows: **More info ← Run anyway**.
@@ -152,6 +168,12 @@ In the app's menu: **Report a Problem…** or **Suggest an Idea…**. It opens a
   האפשרות של לחיצה כפולה כבויה כברירת מחדל. כשמפעילים אותה, האפליקציה בודקת רק את המקש שנבחר, ולא שומרת כלום.
   החיבור היחיד לאינטרנט הוא בדיקת עדכונים פעם ביום מול GitHub (אפשר לכבות).
 - **משוב:** בתפריט, **Report a Problem…** או **Suggest an Idea…** (אפשר לכתוב בעברית).
+- **כוכב:** אם Shift Happens חסכה לכם הקלדה מחדש, תנו לה כוכב ⭐ ב־GitHub, בכפתור Star שלמעלה בעמוד.
+
+---
+
+⭐ **If Shift Happens saved you a retype, [star it on GitHub](https://github.com/Elaad-Adar/shift-happens)**
+(the Star button at the top right). Stars help other people find it.
 
 ## License and development
 

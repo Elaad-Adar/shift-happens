@@ -110,6 +110,9 @@ Apple ABC + Hebrew; refresh it with `.build/debug/shift-happens --dump-layout > 
 
 4. The `release` workflow tests, builds both apps, and publishes the release with the changelog section
    and SHA-256 checksums.
+   Download counts: the README and each release show shields.io badges built from GitHub's own
+   per-file `download_count`. Per version, in a terminal:
+   `gh api repos/Elaad-Adar/shift-happens/releases --jq '.[] | "\(.tag_name) \([.assets[].download_count] | add)"'`
 5. VirusTotal ([virustotal.com](https://www.virustotal.com), free): upload the **Mac zip** as is, and for
    Windows upload **`ShiftHappens.exe` from inside the zip** (VirusTotal only looks inside archives up
    to 3 MB, and the Windows zip is ~67 MB). Add both report links, the exe's SHA-256 and any detection
