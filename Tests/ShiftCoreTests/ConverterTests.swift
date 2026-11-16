@@ -11,8 +11,9 @@ func macTable() throws -> LayoutTable {
 
 /// Tiny dictionary spell checker, so core logic is tested without the OS.
 struct FakeSpell: SpellChecking {
-    let en: Set<String> = ["hello", "world", "the", "things", "i", "love", "what", "is", "this", "ok"]
-    let he: Set<String> = ["שלום", "מה", "נשמע", "אני", "אוהב", "ספר"]
+    let en: Set<String> = ["hello", "world", "the", "things", "i", "love", "what", "is", "this", "ok",
+                           "how", "are", "you", "it", "its", "to", "whats", "up"]
+    let he: Set<String> = ["שלום", "מה", "נשמע", "אני", "אוהב", "ספר", "ים", "שרק", "אם"]
 
     func words(_ lang: Lang) -> Set<String> { lang == .en ? en : he }
 
@@ -51,6 +52,18 @@ struct FakeSpell: SpellChecking {
         ("123", "123"),
         ("", ""),
         ("  akuo  ", "  שלום  "),
+        // Sentence on the wrong layout whose words also read as short Hebrew words (#15).
+        ("ים׳ שרק טםו", "how are you"),
+        // Correct short sentences and single short words stay.
+        ("is it ok", "is it ok"),
+        ("אם", "אם"),
+        ("to", "to"),
+        // Contractions without the apostrophe (#14), even when the dictionary accepts them.
+        ("whats", "what's"),
+        ("Whats up", "What's up"),
+        ("im", "I'm"),
+        ("IM", "I'M"),
+        ("its", "its"),
     ])
     func smart(input: String, expected: String) throws {
         #expect(try converter().convert(input).text == expected)

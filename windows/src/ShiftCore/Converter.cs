@@ -46,7 +46,8 @@ public sealed class Converter
         return new string(s.Select(c => map.GetValueOrDefault(c, c)).ToArray());
     }
 
-    sealed record Word(int Index, Script Script, string Core, string Swapped, string SwappedCore, bool OrigOk, bool SwapOk);
+    sealed record Word(int Index, Script Script, string Core, string Swapped, string SwappedCore, bool OrigOk, bool SwapOk,
+        string? Contraction);
 
     enum Decision { Swap, Fix }
 
@@ -69,11 +70,13 @@ public sealed class Converter
             }
             var swapped = Swap(run, script);
             var swappedCore = TextTools.SplitCore(swapped).Core;
-            bool origOk = mode != Mode.ForceSwap && _spell.IsCorrect(core, script.Lang());
+            // "whats" -> "what's": typed on the right layout, missing only the apostrophe.
+            var contraction = mode == Mode.ForceSwap || script != Script.Latin ? null : Contractions.Fix(core);
+            bool origOk = mode != Mode.ForceSwap && (contraction is not null || _spell.IsCorrect(core, script.Lang()));
             bool swapOk = mode != Mode.ForceSwap && swappedCore.Length > 0
                 && TextTools.ScriptOf(swappedCore) == script.Other()
                 && _spell.IsCorrect(swappedCore, script.Other().Lang());
-            words.Add(new Word(i, script, core, swapped, swappedCore, origOk, swapOk));
+            words.Add(new Word(i, script, core, swapped, swappedCore, origOk, swapOk, contraction));
         }
 
         var swappedCount = new Dictionary<Script, int>();
@@ -96,6 +99,13 @@ public sealed class Converter
                     runs[w.Index] = w.Swapped;
                     swappedCount[script] = swappedCount.GetValueOrDefault(script) + 1;
                     notes.Add($"swap  {w.Core} -> {w.SwappedCore}");
+                }
+                else if (w.Contraction is string c)
+                {
+                    var (lead, _, trail) = TextTools.SplitCore(runs[w.Index]);
+                    runs[w.Index] = lead + c + trail;
+                    fixedCount++;
+                    notes.Add($"fix   {w.Core} -> {c}");
                 }
                 else if (w.OrigOk)
                 {
@@ -149,6 +159,14 @@ public sealed class Converter
             if (w.SwapOk) afterSwap += w.SwappedCore.Length <= 3 ? 0.5 : 1;
         }
         var score = $"as typed {asTyped}, after swap {afterSwap}";
+        // A sentence typed on the wrong layout: every word reads as a real word after the swap, and
+        // something as typed is not a word. Short words alone score low on both sides ("how are you"
+        // typed on Hebrew reads as two real Hebrew words and a typo), so the whole sentence decides.
+        if (group.Count >= 2 && group.All(w => w.SwapOk) && group.Any(w => !w.OrigOk))
+        {
+            notes.Add($"{script}: {score}, every word reads after swap -> swap");
+            return Decision.Swap;
+        }
         if (afterSwap > asTyped)
         {
             notes.Add($"{script}: {score} -> swap");
