@@ -54,6 +54,8 @@ public final class Converter {
         let swappedCore: String
         let origOK: Bool
         let swapOK: Bool
+        /// "whats" -> "what's": typed on the right layout, missing only the apostrophe.
+        let contraction: String?
     }
 
     private enum Decision { case swap, fix }
@@ -72,12 +74,15 @@ public final class Converter {
             }
             let swapped = swap(run, from: script)
             let swappedCore = TextTools.splitCore(swapped).core
-            let origOK = mode == .forceSwap ? false : spell.isCorrect(core, lang: script.lang)
+            let contraction = mode == .forceSwap || script != .latin ? nil : Contractions.fix(core)
+            let origOK = mode == .forceSwap ? false
+                : (contraction != nil || spell.isCorrect(core, lang: script.lang))
             let swapOK = mode == .forceSwap ? false
                 : (!swappedCore.isEmpty && TextTools.script(of: swappedCore) == script.other
                    && spell.isCorrect(swappedCore, lang: script.other.lang))
             words.append(Word(index: i, script: script, core: core, swapped: swapped,
-                              swappedCore: swappedCore, origOK: origOK, swapOK: swapOK))
+                              swappedCore: swappedCore, origOK: origOK, swapOK: swapOK,
+                              contraction: contraction))
         }
 
         var swappedCount: [Script: Int] = [:]
@@ -101,6 +106,11 @@ public final class Converter {
                     runs[w.index] = w.swapped
                     swappedCount[script, default: 0] += 1
                     notes.append("swap  \(w.core) -> \(w.swappedCore)")
+                } else if let c = w.contraction {
+                    let (lead, _, trail) = TextTools.splitCore(runs[w.index])
+                    runs[w.index] = lead + c + trail
+                    fixed += 1
+                    notes.append("fix   \(w.core) -> \(c)")
                 } else if w.origOK {
                     continue
                 } else if let g = closeGuess(w.core, lang: script.lang) {
@@ -151,6 +161,13 @@ public final class Converter {
             }
         }
         let score = "as typed \(asTyped), after swap \(afterSwap)"
+        // A sentence typed on the wrong layout: every word reads as a real word after the swap, and
+        // something as typed is not a word. Short words alone score low on both sides ("how are you"
+        // typed on Hebrew reads as two real Hebrew words and a typo), so the whole sentence decides.
+        if group.count >= 2, group.allSatisfy(\.swapOK), group.contains(where: { !$0.origOK }) {
+            notes.append("\(script): \(score), every word reads after swap -> swap")
+            return .swap
+        }
         if afterSwap > asTyped {
             notes.append("\(script): \(score) -> swap")
             return .swap

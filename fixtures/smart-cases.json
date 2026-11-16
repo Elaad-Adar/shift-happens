@@ -102,6 +102,51 @@
       "why": "empty"
     },
     {
+      "in": "ים׳ שרק טםו",
+      "out": "how are you",
+      "why": "#15: English sentence on Hebrew (Mac Hebrew types ׳ on the W key); each word also reads as a short Hebrew word or a typo"
+    },
+    {
+      "in": "ים׳ שרק טםו םל",
+      "out": "how are you ok",
+      "why": "same, longer"
+    },
+    {
+      "in": ",usv rcv",
+      "out": "תודה רבה",
+      "why": "Hebrew sentence on English; the English speller accepts the short swapped strings"
+    },
+    {
+      "in": "is it ok",
+      "out": "is it ok",
+      "why": "correct short English sentence left alone"
+    },
+    {
+      "in": "אם",
+      "out": "אם",
+      "why": "single short Hebrew word that swaps to an English word (to) stays"
+    },
+    {
+      "in": "whats",
+      "out": "what's",
+      "why": "#14: contraction without the apostrophe"
+    },
+    {
+      "in": "i cant go",
+      "out": "i can't go",
+      "why": "contraction inside a sentence"
+    },
+    {
+      "in": "im",
+      "out": "I'm",
+      "why": "contraction, capital I; was swapped to Hebrew before"
+    },
+    {
+      "in": "its",
+      "out": "its",
+      "why": "real word, not a contraction"
+    },
+    {
       "in": "hello",
       "out": "יקךךם",
       "mode": "force",

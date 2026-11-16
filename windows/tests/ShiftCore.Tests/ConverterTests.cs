@@ -14,8 +14,9 @@ public static class Fixtures
 
 sealed class FakeSpell : ISpellChecking
 {
-    static readonly HashSet<string> En = new() { "hello", "world", "the", "things", "i", "love", "what", "is", "this", "ok" };
-    static readonly HashSet<string> He = new() { "שלום", "מה", "נשמע", "אני", "אוהב", "ספר" };
+    static readonly HashSet<string> En = new() { "hello", "world", "the", "things", "i", "love", "what", "is", "this", "ok",
+        "how", "are", "you", "it", "its", "to", "whats", "up" };
+    static readonly HashSet<string> He = new() { "שלום", "מה", "נשמע", "אני", "אוהב", "ספר", "ים", "שרק", "אם" };
 
     static HashSet<string> Words(Lang lang) => lang == Lang.En ? En : He;
 
@@ -69,6 +70,18 @@ public class ConverterTests
     [InlineData("", "")]
     [InlineData("  akuo  ", "  שלום  ")]
     [InlineData("hello akuo", "hello שלום")]
+    // Sentence on the wrong layout whose words also read as short Hebrew words (#15).
+    [InlineData("ים׳ שרק טםו", "how are you")]
+    // Correct short sentences and single short words stay.
+    [InlineData("is it ok", "is it ok")]
+    [InlineData("אם", "אם")]
+    [InlineData("to", "to")]
+    // Contractions without the apostrophe (#14), even when the dictionary accepts them.
+    [InlineData("whats", "what's")]
+    [InlineData("Whats up", "What's up")]
+    [InlineData("im", "I'm")]
+    [InlineData("IM", "I'M")]
+    [InlineData("its", "its")]
     public void Smart(string input, string expected) => Assert.Equal(expected, Make().Convert(input).Text);
 
     [Fact]

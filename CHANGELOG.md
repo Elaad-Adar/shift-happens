@@ -2,6 +2,13 @@
 
 Each release's section is copied into its GitHub release notes. Newest first.
 
+## 1.5.0
+
+- Fix now swaps a whole sentence typed on the wrong keyboard when every word reads right after the swap,
+  even if some words also look like short Hebrew words ("how are you" typed on Hebrew, #15).
+- Fix adds the missing apostrophe to English contractions: `whats` → `what's`, `cant` → `can't`,
+  `im` → `I'm` (#14). Real words such as `its`, `lets` and `wont` are left alone.
+
 ## 1.4.0
 
 - Public release: MIT license, a README written for users (English and Hebrew), a privacy and security
