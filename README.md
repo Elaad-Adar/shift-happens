@@ -35,7 +35,8 @@
 | Needs | macOS 13 or newer, Apple Silicon or Intel | Windows 10 or 11 (64-bit) |
 
 Both need an English and a Hebrew keyboard added in the system settings. The hotkey can be changed in
-**Settings…**.
+**Settings…**: any combination with Ctrl, Alt (⌥) or ⌘/Win, an F key alone (like `F10`), or a double tap
+of Ctrl, Alt (⌥), Shift or ⌘.
 
 ## Download
 
@@ -68,6 +69,15 @@ no "Run anyway"; Shift Happens cannot run there.
 ## Using it
 
 - Select text and press the hotkey. Or don't select anything: it fixes the word before the cursor.
+- **Fix** (the main hotkey) decides for you: typed on the wrong keyboard, it swaps the text
+  (`akuo` → `שלום`); typed on the right keyboard, it fixes the spelling (`teh` → `the`, `whats` → `what's`).
+- **Swap** (optional second hotkey) always swaps key for key, with no spell check (`teh` → `אקי`). Use it
+  when Fix guesses wrong, for example with names or slang.
+- **F key alone:** works in every app. On a Mac keyboard press it with `Fn`, or turn on "Use F1, F2, etc.
+  keys as standard function keys" in System Settings → Keyboard. On Windows, `F10` alone normally opens
+  app menus.
+- **Double tap** (off by default): tap Ctrl twice (or ⌥, Shift, ⌘) to run Fix. See
+  [Privacy and security](#privacy-and-security) for what this option watches.
 - **Settings…** (from the menu-bar or tray icon): change the hotkey, add an optional "always swap" hotkey,
   turn off "fix the word before the cursor", keyboard switching, start at login, update checks.
 - **Check for Updates…**, **Report a Problem…** and **Suggest an Idea…** are in the same menu.
@@ -77,7 +87,11 @@ no "Run anyway"; Shift Happens cannot run there.
 An app that asks for Accessibility and touches your clipboard deserves a straight answer:
 
 - It reads text **only when you press the hotkey**: the selection, or the word before the cursor.
-- It **never records your typing**. There is no keyboard hook and no Input Monitoring permission.
+- It **never records your typing**. By default there is no keyboard hook and no Input Monitoring permission.
+- The optional **double tap** shortcut (off by default) needs to notice the double tap. On the Mac it
+  watches only the modifier keys (Ctrl, ⌥, Shift, ⌘) going down and up, never letters, plus the system's
+  count of key presses (a number, not which keys). On Windows it uses a keyboard hook that looks only at
+  whether the chosen key went down or up; it keeps and sends nothing. Turn it off and the watching stops.
 - It puts your clipboard back after each conversion.
 - Its only network call is once a day to GitHub's public "latest release" address, to tell you about
   updates (you can turn this off). No analytics, no account, nothing about you is sent.
@@ -104,6 +118,9 @@ new version over the old one (your settings are kept).
 - **Something went wrong?** `⌘Z` / `Ctrl+Z` undoes it.
 - **The hotkey does nothing?** Another app may own it; Shift Happens says so and lets you pick another
   in Settings. On the Mac, check that Accessibility is on for it.
+- **Settings won't take my new shortcut?** A key alone (like `K` or `Space`) can't be a shortcut, because it
+  would fire while you type: add Ctrl, Alt (⌥) or ⌘/Win, or use an F key. Settings says why under the
+  boxes. Shortcuts that macOS or Windows keep for themselves (such as ⌘Space) never reach the app.
 
 Known limits: in mixed Hebrew/English text, words of 1–3 letters can be read the wrong way; editors that
 copy the whole line when nothing is selected (JetBrains IDEs) need the word selected by hand; clipboard
@@ -120,7 +137,11 @@ In the app's menu: **Report a Problem…** or **Suggest an Idea…**. It opens a
 והמקלדת עוברת לשפה הנכונה לבד. אם השפה נכונה, היא מתקנת שגיאות כתיב (`teh` ← `the`).
 בלי לסמן כלום היא מתקנת את המילה שלפני הסמן; כדי לתקן משפט שלם, מסמנים אותו.
 
-- **קיצור:** ב־Mac ‏`⌃⇧Space`, ב־Windows ‏`Ctrl+Shift+Space`. אפשר לשנות בהגדרות.
+- **קיצור:** ב־Mac ‏`⌃⇧Space`, ב־Windows ‏`Ctrl+Shift+Space`. אפשר לשנות בהגדרות, גם למקש F לבד
+  (כמו F10) או ללחיצה כפולה על Ctrl.
+- **ההבדל בין Fix ל־Swap:** מצב Fix מחליט לבד. אם הקלדת במקלדת הלא נכונה, הוא הופך את הטקסט, למשל akuo
+  הופך לשלום. אם המקלדת הייתה נכונה, הוא מתקן שגיאת כתיב, למשל teh הופך ל־the.
+  מצב Swap תמיד הופך מקש למקש, בלי בדיקת איות, למשל teh הופך לאקי.
 - **הורדה:** [הגרסה האחרונה](https://github.com/Elaad-Adar/shift-happens/releases/latest), הקובץ שנגמר
   ב־`-mac.zip` או ב־`-windows.zip`.
 - **אזהרה בהתקנה:** האפליקציה חינמית ולא חתומה, ולכן המחשב מזהיר בפעם הראשונה.
@@ -128,6 +149,7 @@ In the app's menu: **Report a Problem…** or **Suggest an Idea…**. It opens a
   - ב־Windows: **More info ← Run anyway**.
   - מחשבים שמופעלת בהם "בקרת אפליקציות חכמה" (Smart App Control) חוסמים אותה לגמרי.
 - **פרטיות:** האפליקציה קוראת טקסט רק כשלוחצים על הקיצור, לא מקליטה הקלדה, ומחזירה את הלוח (clipboard) למצבו.
+  האפשרות של לחיצה כפולה כבויה כברירת מחדל. כשמפעילים אותה, האפליקציה בודקת רק את המקש שנבחר, ולא שומרת כלום.
   החיבור היחיד לאינטרנט הוא בדיקת עדכונים פעם ביום מול GitHub (אפשר לכבות).
 - **משוב:** בתפריט, **Report a Problem…** או **Suggest an Idea…** (אפשר לכתוב בעברית).
 

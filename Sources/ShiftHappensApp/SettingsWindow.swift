@@ -15,6 +15,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let updateStatus = NSTextField(labelWithString: "")
     private let updateButton = NSButton(title: "Check Now", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
+    private let hint = NSTextField(wrappingLabelWithString: "")
+    private let doubleTapPopup = NSPopUpButton()
 
     init(app: AppDelegate) {
         self.app = app
@@ -34,12 +36,29 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         forceRecorder.shortcut = s.forceSwapShortcut
 
         for r in [convertRecorder, forceRecorder] {
-            r.onStart = { [weak self] in self?.app?.pauseHotKeys() }
+            r.onStart = { [weak self] in
+                self?.app?.pauseHotKeys()
+                self?.hint.stringValue = "Press the new shortcut: ⌃, ⌥ or ⌘ with a key, or an F key alone. Esc cancels."
+            }
+            r.onReject = { [weak self] key in
+                self?.hint.stringValue = "\(key) alone can't be a shortcut, it would fire while you type. "
+                    + "Add ⌃, ⌥ or ⌘, or use an F key. Esc cancels."
+            }
             r.onEnd = { [weak self] in self?.saveShortcuts() }
         }
 
+        doubleTapPopup.addItem(withTitle: "Off")
+        for key in DoubleTapKey.allCases { doubleTapPopup.addItem(withTitle: key.title) }
+        if let key = s.doubleTapKey, let i = DoubleTapKey.allCases.firstIndex(of: key) {
+            doubleTapPopup.selectItem(at: i + 1)
+        }
+        doubleTapPopup.target = self
+        doubleTapPopup.action = #selector(changeDoubleTap)
+
         let clearForce = NSButton(title: "Clear", target: self, action: #selector(clearForce))
         clearForce.bezelStyle = .rounded
+        let clearConvert = NSButton(title: "Clear", target: self, action: #selector(clearConvert))
+        clearConvert.bezelStyle = .rounded
 
         switchBox.target = self
         switchBox.action = #selector(toggleSwitch)
@@ -55,13 +74,19 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         status.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
 
         let help = NSTextField(wrappingLabelWithString:
-            "Fix: wrong keyboard → swaps the text; right keyboard → fixes spelling. Swap: always swaps.")
+            "Fix: typed on the wrong keyboard → swaps it; right keyboard → fixes spelling.\n"
+            + "    akuo → שלום,  teh → the\n"
+            + "Swap: always swaps key for key, no spell check. For when Fix guesses wrong.\n"
+            + "    teh → אקי\n"
+            + "Double-tap: off by default. When on, Shift Happens watches only the modifier keys "
+            + "(not letters) to notice the double tap.")
         help.textColor = .secondaryLabelColor
         help.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
 
         let grid = NSGridView(views: [
-            [NSTextField(labelWithString: "Fix selection:"), convertRecorder, NSGridCell.emptyContentView],
+            [NSTextField(labelWithString: "Fix selection:"), convertRecorder, clearConvert],
             [NSTextField(labelWithString: "Swap selection:"), forceRecorder, clearForce],
+            [NSTextField(labelWithString: "Double-tap for Fix:"), doubleTapPopup, NSGridCell.emptyContentView],
         ])
         grid.column(at: 0).xPlacement = .trailing
         grid.rowSpacing = 10
@@ -91,7 +116,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let feedbackRow = NSStackView(views: [report, idea])
         feedbackRow.spacing = 8
 
-        let stack = NSStackView(views: [versionRow, updateStatus, grid, help, wordBox, switchBox, loginBox,
+        hint.textColor = .secondaryLabelColor
+        hint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        hint.preferredMaxLayoutWidth = 420
+
+        let stack = NSStackView(views: [versionRow, updateStatus, grid, hint, help, wordBox, switchBox, loginBox,
                                         updatesBox, feedbackRow, status])
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -158,8 +187,29 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         refreshStatus()
     }
 
+    /// Shown under the shortcuts: a note when an F key alone is used, else nothing.
+    private func refreshHint() {
+        let bare = [convertRecorder.shortcut, forceRecorder.shortcut].compactMap { $0 }.filter(\.isBareFunctionKey)
+        hint.stringValue = bare.isEmpty ? "" :
+            "\(bare.map(\.display).joined(separator: ", ")) alone works in every app. On a Mac keyboard press it with "
+            + "Fn, or turn on “Use F1, F2, etc. keys as standard function keys” in System Settings → Keyboard."
+    }
+
+    @objc private func changeDoubleTap() {
+        let i = doubleTapPopup.indexOfSelectedItem
+        Settings.shared.doubleTapKey = i > 0 ? DoubleTapKey.allCases[i - 1] : nil
+        app?.applyDoubleTap()
+    }
+
     private func refreshStatus() {
         status.stringValue = (app?.hotkeyProblems ?? []).joined(separator: "\n")
+        refreshHint()
+    }
+
+    /// Lets the double tap be the only way to run Fix.
+    @objc private func clearConvert() {
+        convertRecorder.shortcut = nil
+        saveShortcuts()
     }
 
     @objc private func clearForce() {
@@ -195,12 +245,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
-/// Button that records the next key combination (needs ⌃, ⌥ or ⌘; Esc cancels).
+/// Button that records the next key combination (needs ⌃, ⌥ or ⌘, or is an F key; Esc cancels).
 @MainActor
 final class ShortcutRecorder: NSButton {
     var shortcut: Shortcut? { didSet { updateTitle() } }
     var onStart: (() -> Void)?
     var onEnd: (() -> Void)?
+    /// Called with the key's name when a key without ⌃, ⌥ or ⌘ is pressed (and is not an F key).
+    var onReject: ((String) -> Void)?
     private var monitor: Any?
 
     init() {
@@ -227,11 +279,14 @@ final class ShortcutRecorder: NSButton {
                 return nil
             }
             let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
-            guard !mods.intersection([.command, .option, .control]).isEmpty else {
-                NSSound.beep()  // a hotkey needs ⌃, ⌥ or ⌘
+            let candidate = Shortcut(keyCode: UInt32(event.keyCode), modifiers: mods.rawValue)
+            guard HotkeyRule.allowed(hasCommandModifier: !mods.intersection([.command, .option, .control]).isEmpty,
+                                     isFunctionKey: candidate.isFunctionKey) else {
+                NSSound.beep()
+                self.onReject?(candidate.display)
                 return nil
             }
-            self.shortcut = Shortcut(keyCode: UInt32(event.keyCode), modifiers: mods.rawValue)
+            self.shortcut = candidate
             self.stop()
             return nil
         }

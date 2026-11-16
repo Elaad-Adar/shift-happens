@@ -24,7 +24,13 @@ sealed record Shortcut(uint Modifiers, uint Key)
         }
     }
 
-    static string KeyName(Keys k) => k switch
+    /// <summary>F1–F24. One of these alone may be a hotkey.</summary>
+    public bool IsFunctionKey => Key >= (uint)Keys.F1 && Key <= (uint)Keys.F24;
+
+    /// <summary>An F key with no modifier: it works in every app, so Settings warns about it.</summary>
+    public bool IsBareFunctionKey => IsFunctionKey && (Modifiers & (Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_SHIFT | Native.MOD_WIN)) == 0;
+
+    public static string KeyName(Keys k) => k switch
     {
         >= Keys.D0 and <= Keys.D9 => ((char)('0' + (k - Keys.D0))).ToString(),
         Keys.Oemcomma => ",",
@@ -51,6 +57,9 @@ sealed class Settings
     /// <summary>With nothing selected, select and fix the word just before the cursor.</summary>
     public bool FixWordBeforeCursor { get; set; } = true;
     public bool WelcomeShown { get; set; }
+    /// <summary>Modifier whose double tap runs Fix, or null (default: off, no keyboard hook).</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+    public DoubleTapKey? DoubleTapKey { get; set; }
     /// <summary>Ask GitHub once a day whether a newer release exists.</summary>
     public bool CheckForUpdates { get; set; } = true;
     public DateTime? LastUpdateCheck { get; set; }
