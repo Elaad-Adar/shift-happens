@@ -264,7 +264,6 @@ sealed class ClipboardSnapshot
     static readonly HashSet<string> TextFormats = new(StringComparer.Ordinal)
     {
         DataFormats.UnicodeText, DataFormats.Text, DataFormats.OemText, DataFormats.Rtf, DataFormats.Html,
-        DataFormats.CommaSeparatedValue,
     };
 
     /// <summary>Windows' clipboard history and cloud clipboard formats (#28): content that carries them is
@@ -274,16 +273,23 @@ sealed class ClipboardSnapshot
     const string CanUploadToCloud = "CanUploadToCloudClipboard";
 
     readonly List<(string Format, object Value)> _items;
+    /// <summary>The clipboard's change counter when the snapshot was taken.</summary>
+    readonly uint _sequence;
 
-    ClipboardSnapshot(List<(string, object)> items) => _items = items;
+    ClipboardSnapshot(List<(string, object)> items, uint sequence)
+    {
+        _items = items;
+        _sequence = sequence;
+    }
 
     public static ClipboardSnapshot Take()
     {
+        uint sequence = Native.GetClipboardSequenceNumber();
         var items = new List<(string, object)>();
         try
         {
             var src = SelectionConverter.Retry(Clipboard.GetDataObject);
-            if (src is null) return new ClipboardSnapshot(items);
+            if (src is null) return new ClipboardSnapshot(items, sequence);
             foreach (var format in src.GetFormats(false))
             {
                 try
@@ -300,7 +306,7 @@ sealed class ClipboardSnapshot
         {
             ErrorLog.Write("clipboard read", e);
         }
-        return new ClipboardSnapshot(items);
+        return new ClipboardSnapshot(items, sequence);
     }
 
     /// <summary>The value to keep for one format, as a type WinForms writes without serializing, or null.</summary>
@@ -315,6 +321,9 @@ sealed class ClipboardSnapshot
 
     public void Restore(bool keepOutOfHistory)
     {
+        // Nothing has written to the clipboard since the snapshot (for example nothing was selected): leave it
+        // alone. A restore keeps only the safe formats, so it would drop the rest for no reason.
+        if (Native.GetClipboardSequenceNumber() == _sequence) return;
         var data = new DataObject();
         foreach (var (format, value) in _items)
         {
