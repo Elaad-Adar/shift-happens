@@ -14,6 +14,9 @@ Each release's section is copied into its GitHub release notes. Newest first.
   into the app. Errors the app catches are written to `%LOCALAPPDATA%\ShiftHappens\error.log`.
 - Windows: the app's own clipboard use is kept out of clipboard history (Win+V) and the cloud clipboard,
   so only what you copy shows there (#28). On by default; turn it off in Settings.
+- Fix and Swap keep formatting such as numbered lists, bullets and bold in apps that copy rich text
+  (browsers, Claude desktop and other Electron apps, #26). When the rich copy does not match the text word
+  for word, they paste plain text as before.
 
 ## 1.5.0
 
