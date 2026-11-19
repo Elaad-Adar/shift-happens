@@ -15,6 +15,9 @@ sealed class SelectionConverter
     bool _busy;
 
     public string LastStatus { get; private set; } = "";
+
+    /// <summary>Called when the hotkey runs but a keyboard is missing, with the reason. The tray shows it once.</summary>
+    public Action<string>? MissingKeyboard { get; set; }
     public bool HasHebrewSpelling => _spell.HasHebrew;
 
     public SelectionConverter(Settings settings)
@@ -42,9 +45,12 @@ sealed class SelectionConverter
     public async void Run(Mode mode)
     {
         if (_busy) return;
+        // A keyboard added since the last check: read the layouts again before giving up.
+        if (_converter is null) ReloadLayouts();
         if (_converter is null)
         {
             SystemSounds.Beep.Play();
+            MissingKeyboard?.Invoke(LastStatus);
             return;
         }
         _busy = true;

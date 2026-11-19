@@ -31,12 +31,22 @@ static class WinLayouts
         var hebrew = list.FirstOrDefault(h => LangId(h) == LangHebrew);
         var latin = list.FirstOrDefault(h => LangId(h) == LangEnglishUS);
         if (latin == IntPtr.Zero) latin = list.FirstOrDefault(h => (LangId(h) & 0x3FF) == PrimaryEnglish);
+        // English under a newer locale such as English (Israel) has no classic language id: Windows gives
+        // it a placeholder (0x2000), so the checks above miss it (#29). Fall back to the first layout that
+        // is not Hebrew and types Latin letters on the Q and A keys. Russian or Arabic fail this test.
+        if (latin == IntPtr.Zero) latin = list.FirstOrDefault(h => LangId(h) != LangHebrew && TypesLatin(h));
         if (hebrew == IntPtr.Zero)
             throw new InvalidOperationException("No Hebrew keyboard. Add one in Settings > Time & language > Language & region.");
         if (latin == IntPtr.Zero)
             throw new InvalidOperationException("No English keyboard. Add one in Settings > Time & language > Language & region.");
         return new LayoutPair(latin, hebrew, Id(latin), Id(hebrew));
     }
+
+    const uint ScanQ = 0x10;
+    const uint ScanA = 0x1E;
+
+    /// <summary>True when the layout types q and a on the Q and A keys, as US English and similar layouts do.</summary>
+    static bool TypesLatin(IntPtr hkl) => Character(hkl, ScanQ, false) == "q" && Character(hkl, ScanA, false) == "a";
 
     /// <summary>Scan codes of the main typing block: digit row, three letter rows, space, and the extra
     /// key next to left Shift on ISO keyboards.</summary>

@@ -6,6 +6,9 @@ Each release's section is copied into its GitHub release notes. Newest first.
 
 - Fix no longer treats a suggestion that only adds a capital letter as a spelling fix, so short Hebrew
   words typed on the English keyboard swap as they should (`vhh` → `היי`, not `Vhh`, #30).
+- Windows: works when the English keyboard is installed as English (Israel) or another English variant
+  that Windows gives no classic language id (#29). When a keyboard is really missing, the hotkey now shows
+  a message saying so the first time, instead of only beeping.
 
 ## 1.5.0
 
