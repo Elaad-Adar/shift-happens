@@ -190,7 +190,9 @@ public final class Converter {
         let target = TextTools.fold(word)
         let maxDistance = word.count <= 4 ? 1 : 2
         var best: (d: Int, word: String)?
-        for g in spell.guesses(for: word, lang: lang) where g != word {
+        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30).
+        let lowered = word.lowercased()
+        for g in spell.guesses(for: word, lang: lang) where g.lowercased() != lowered {
             let d = TextTools.distance(target, TextTools.fold(g))
             if d <= maxDistance && (best == nil || d < best!.d) { best = (d, g) }
         }

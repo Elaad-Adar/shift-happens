@@ -2,6 +2,11 @@
 
 Each release's section is copied into its GitHub release notes. Newest first.
 
+## Unreleased
+
+- Fix no longer treats a suggestion that only adds a capital letter as a spelling fix, so short Hebrew
+  words typed on the English keyboard swap as they should (`vhh` → `היי`, not `Vhh`, #30).
+
 ## 1.5.0
 
 - Fix now swaps a whole sentence typed on the wrong keyboard when every word reads right after the swap,
