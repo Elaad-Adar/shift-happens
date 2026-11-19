@@ -21,6 +21,14 @@ static class Program
             return 0;
         }
 
+        // Log errors that escape a handler instead of closing without a trace (#27). UI-thread errors are
+        // logged and the app keeps running; others are logged before the process ends.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, e) => ErrorLog.Write("ui thread", e.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            ErrorLog.Write("unhandled", e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()));
+        TaskScheduler.UnobservedTaskException += (_, e) => { ErrorLog.Write("task", e.Exception); e.SetObserved(); };
+
         ApplicationConfiguration.Initialize();
         Application.Run(new TrayApp());
         return 0;

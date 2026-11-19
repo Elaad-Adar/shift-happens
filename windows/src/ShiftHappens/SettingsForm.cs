@@ -10,6 +10,7 @@ sealed class SettingsForm : Form
     readonly HotkeyBox _forceBox = new();
     readonly CheckBox _wordBox = new() { Text = "With nothing selected, fix the word before the cursor", AutoSize = true };
     readonly CheckBox _switchBox = new() { Text = "Switch keyboard to the new language after a swap", AutoSize = true };
+    readonly CheckBox _historyBox = new() { Text = "Keep Shift Happens' clipboard use out of clipboard history (Win+V)", AutoSize = true };
     readonly CheckBox _startupBox = new() { Text = "Start with Windows", AutoSize = true };
     readonly CheckBox _updatesBox = new() { Text = "Check for updates once a day", AutoSize = true };
     readonly Label _updateStatus = new() { AutoSize = true, ForeColor = SystemColors.GrayText };
@@ -74,6 +75,9 @@ sealed class SettingsForm : Form
 
         _switchBox.Checked = s.SwitchLayoutAfterSwap;
         _switchBox.CheckedChanged += (_, _) => { s.SwitchLayoutAfterSwap = _switchBox.Checked; s.Save(); };
+
+        _historyBox.Checked = s.KeepOutOfClipboardHistory;
+        _historyBox.CheckedChanged += (_, _) => { s.KeepOutOfClipboardHistory = _historyBox.Checked; s.Save(); };
 
         _startupBox.Checked = Startup.Enabled;
         _startupBox.CheckedChanged += (_, _) =>
@@ -150,7 +154,7 @@ sealed class SettingsForm : Form
 
         stack.Controls.AddRange(new Control[]
         {
-            versionRow, _updateStatus, grid, _hint, help, _wordBox, _switchBox, _startupBox, _updatesBox, feedbackRow, _status,
+            versionRow, _updateStatus, grid, _hint, help, _wordBox, _switchBox, _historyBox, _startupBox, _updatesBox, feedbackRow, _status,
         });
         Controls.Add(stack);
         RefreshStatus();

@@ -30,7 +30,9 @@ sealed class HotKeys : NativeWindow, IDisposable
     {
         if (m.Msg == Native.WM_HOTKEY && _actions.TryGetValue((int)m.WParam, out var action))
         {
-            action();
+            // An exception escaping a window procedure that Windows called can end the process (#27).
+            try { action(); }
+            catch (Exception e) { ErrorLog.Write("hotkey", e); }
             return;
         }
         base.WndProc(ref m);
