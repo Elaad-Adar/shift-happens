@@ -180,12 +180,26 @@ public static class CfHtml
         return end < 0 ? null : cfHtml[start..end];
     }
 
-    /// <summary>A CF_HTML string for <paramref name="fragment"/>, with the header's byte offsets filled in.</summary>
-    public static string Wrap(string fragment)
+    /// <summary><paramref name="cfHtml"/> with its copied part replaced by <paramref name="fragment"/>. The HTML
+    /// around the fragment (for example the <c>&lt;ol&gt;</c> of a copied <c>&lt;li&gt;</c>) is kept, and the
+    /// header's byte offsets are recomputed. Null when there are no fragment markers.</summary>
+    public static string? ReplaceFragment(string cfHtml, string fragment)
+    {
+        // The header is "Key:value" lines; the HTML starts at the first '<'.
+        int htmlStart = cfHtml.IndexOf('<');
+        if (htmlStart < 0) return null;
+        var html = cfHtml[htmlStart..];
+        int start = html.IndexOf(StartMarker, StringComparison.OrdinalIgnoreCase);
+        if (start < 0) return null;
+        start += StartMarker.Length;
+        int end = html.IndexOf(EndMarker, start, StringComparison.OrdinalIgnoreCase);
+        if (end < 0) return null;
+        return Build(html[..start], fragment, html[end..]);
+    }
+
+    static string Build(string before, string fragment, string after)
     {
         const string header = "Version:0.9\r\nStartHTML:{0:D10}\r\nEndHTML:{1:D10}\r\nStartFragment:{2:D10}\r\nEndFragment:{3:D10}\r\n";
-        const string before = "<html><body>\r\n" + StartMarker;
-        const string after = EndMarker + "\r\n</body></html>";
         int headerBytes = Encoding.UTF8.GetByteCount(string.Format(CultureInfo.InvariantCulture, header, 0, 0, 0, 0));
         int startHtml = headerBytes;
         int startFragment = startHtml + Encoding.UTF8.GetByteCount(before);

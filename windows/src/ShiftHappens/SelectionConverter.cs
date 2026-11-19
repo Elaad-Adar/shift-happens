@@ -95,8 +95,9 @@ sealed class SelectionConverter
             var converted = new DataObject();
             converted.SetData(DataFormats.UnicodeText, false, result.Text);
             if (html is not null && CfHtml.Fragment(html) is { } fragment &&
-                RichText.ConvertHtml(fragment, text, result.Text) is { } rich)
-                converted.SetData(DataFormats.Html, false, CfHtml.Wrap(rich));
+                RichText.ConvertHtml(fragment, text, result.Text) is { } rich &&
+                CfHtml.ReplaceFragment(html, rich) is { } richClip)
+                converted.SetData(DataFormats.Html, false, richClip);
             if (!ClipboardSnapshot.Write(converted, _settings.KeepOutOfClipboardHistory))
             {
                 // Pasting now would paste whatever is on the clipboard instead of the converted text.
