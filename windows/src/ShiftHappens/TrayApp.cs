@@ -15,6 +15,7 @@ sealed class TrayApp : ApplicationContext
     readonly DoubleTapMonitor _doubleTap = new();
     readonly NotifyIcon _tray;
     SettingsForm? _settingsForm;
+    bool _missingKeyboardShown;
 
     public List<string> HotkeyProblems { get; } = new();
     public Settings Settings => _settings;
@@ -29,6 +30,7 @@ sealed class TrayApp : ApplicationContext
     public TrayApp()
     {
         _selection = new SelectionConverter(_settings);
+        _selection.MissingKeyboard = ShowMissingKeyboard;
         Updates = new UpdateChecker(_settings);
         _tray = new NotifyIcon
         {
@@ -62,6 +64,14 @@ sealed class TrayApp : ApplicationContext
             _settings.WelcomeShown = true;
             _settings.Save();
         }
+    }
+
+    /// <summary>The first time the hotkey fails for a missing keyboard, say why, not only beep (#29).</summary>
+    void ShowMissingKeyboard(string reason)
+    {
+        if (_missingKeyboardShown) return;
+        _missingKeyboardShown = true;
+        _tray.ShowBalloonTip(8000, "Shift Happens: keyboard not found", reason, ToolTipIcon.Warning);
     }
 
     void OnPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
