@@ -21,7 +21,7 @@ public enum RichText {
                     i = end
                     continue
                 }
-                let end = html[i...].firstIndex(of: ">").map { html.index(after: $0) } ?? html.endIndex
+                let end = tagEnd(html, from: i)
                 let tag = html[i..<end]
                 out += tag
                 i = end
@@ -54,6 +54,25 @@ public enum RichText {
         return k == from.count ? out : nil
     }
 
+    /// The index just past the `>` that closes the tag starting at `start`. A `>` inside a quoted attribute
+    /// value (`title="a>b"`) does not close it.
+    static func tagEnd(_ html: String, from start: String.Index) -> String.Index {
+        var quote: Character?
+        var i = html.index(after: start)
+        while i < html.endIndex {
+            let c = html[i]
+            if let q = quote {
+                if c == q { quote = nil }
+            } else if c == "\"" || c == "'" {
+                quote = c
+            } else if c == ">" {
+                return html.index(after: i)
+            }
+            i = html.index(after: i)
+        }
+        return html.endIndex
+    }
+
     static let rawTextTags: Set<String> = ["script", "style", "title", "textarea"]
 
     static func words(_ s: String) -> [String] {
@@ -83,8 +102,19 @@ public enum RichText {
         return String(body.prefix { $0.isLetter || $0.isNumber }).lowercased()
     }
 
+    /// Named entities that copied HTML uses for text (Word, Outlook and browsers), including the
+    /// direction marks common in Hebrew mail. An unknown entity does not match the plain text, so the
+    /// paste falls back to plain text.
     static let named: [String: String] = [
-        "amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'", "nbsp": "\u{00A0}",
+        "amp": "&", "lt": "<", "gt": ">", "quot": "\"",
+        "apos": "'", "nbsp": "\u{00A0}", "lrm": "\u{200E}", "rlm": "\u{200F}",
+        "zwj": "\u{200D}", "zwnj": "\u{200C}", "shy": "\u{00AD}", "lsquo": "\u{2018}",
+        "rsquo": "\u{2019}", "sbquo": "\u{201A}", "ldquo": "\u{201C}", "rdquo": "\u{201D}",
+        "bdquo": "\u{201E}", "ndash": "\u{2013}", "mdash": "\u{2014}", "hellip": "\u{2026}",
+        "bull": "\u{2022}", "middot": "\u{00B7}", "copy": "\u{00A9}", "reg": "\u{00AE}",
+        "trade": "\u{2122}", "euro": "\u{20AC}", "shekel": "\u{20AA}", "deg": "\u{00B0}",
+        "times": "\u{00D7}", "laquo": "\u{00AB}", "raquo": "\u{00BB}", "ensp": "\u{2002}",
+        "emsp": "\u{2003}", "thinsp": "\u{2009}",
     ]
 
     static func decodeEntities(_ s: String) -> String {

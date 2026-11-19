@@ -30,6 +30,17 @@ import Testing
             == "<style>p { color: red }</style><!--StartFragment--><p>שלום</p><!--EndFragment-->")
     }
 
+    @Test func quotedGreaterThanInsideATag() {
+        #expect(RichText.convertHTML("<a title=\"a>b\" href='x>y'>akuo</a>", original: "akuo", converted: "שלום")
+            == "<a title=\"a>b\" href='x>y'>שלום</a>")
+    }
+
+    @Test func wordAndOutlookEntities() {
+        #expect(RichText.convertHTML("<p>don&rsquo;t&hellip; &rlm;akuo</p>", original: "don\u{2019}t\u{2026} \u{200F}akuo",
+                                     converted: "don\u{2019}t\u{2026} \u{200F}שלום")
+            == "<p>don\u{2019}t\u{2026} \u{200F}שלום</p>")
+    }
+
     @Test func wordSplitByATagFallsBack() {
         #expect(RichText.convertHTML("<p>ak<b>uo</b></p>", original: "akuo", converted: "שלום") == nil)
     }

@@ -11,9 +11,20 @@ public static class RichText
 {
     static readonly HashSet<string> RawTextTags = new() { "script", "style", "title", "textarea" };
 
+    /// <summary>Named entities that copied HTML uses for text (Word, Outlook and browsers), including the
+    /// direction marks common in Hebrew mail. An unknown entity does not match the plain text, so the paste
+    /// falls back to plain text.</summary>
     static readonly Dictionary<string, string> Named = new()
     {
-        ["amp"] = "&", ["lt"] = "<", ["gt"] = ">", ["quot"] = "\"", ["apos"] = "'", ["nbsp"] = " ",
+        ["amp"] = "&", ["lt"] = "<", ["gt"] = ">", ["quot"] = "\"",
+        ["apos"] = "'", ["nbsp"] = "\u00A0", ["lrm"] = "\u200E", ["rlm"] = "\u200F",
+        ["zwj"] = "\u200D", ["zwnj"] = "\u200C", ["shy"] = "\u00AD", ["lsquo"] = "\u2018",
+        ["rsquo"] = "\u2019", ["sbquo"] = "\u201A", ["ldquo"] = "\u201C", ["rdquo"] = "\u201D",
+        ["bdquo"] = "\u201E", ["ndash"] = "\u2013", ["mdash"] = "\u2014", ["hellip"] = "\u2026",
+        ["bull"] = "\u2022", ["middot"] = "\u00B7", ["copy"] = "\u00A9", ["reg"] = "\u00AE",
+        ["trade"] = "\u2122", ["euro"] = "\u20AC", ["shekel"] = "\u20AA", ["deg"] = "\u00B0",
+        ["times"] = "\u00D7", ["laquo"] = "\u00AB", ["raquo"] = "\u00BB", ["ensp"] = "\u2002",
+        ["emsp"] = "\u2003", ["thinsp"] = "\u2009",
     };
 
     /// <summary><paramref name="html"/> with each word of <paramref name="original"/> replaced by the word at
@@ -39,8 +50,7 @@ public static class RichText
                     i = cEnd;
                     continue;
                 }
-                int gt = html.IndexOf('>', i);
-                int end = gt < 0 ? html.Length : gt + 1;
+                int end = TagEnd(html, i);
                 var tag = html.Substring(i, end - i);
                 output.Append(tag);
                 i = end;
@@ -75,6 +85,24 @@ public static class RichText
             output.Append(changed ? Encode(text.ToString()) : raw);
         }
         return k == from.Count ? output.ToString() : null;
+    }
+
+    /// <summary>The index just past the <c>&gt;</c> that closes the tag starting at <paramref name="start"/>.
+    /// A <c>&gt;</c> inside a quoted attribute value (<c>title="a&gt;b"</c>) does not close it.</summary>
+    static int TagEnd(string html, int start)
+    {
+        char quote = '\0';
+        for (int i = start + 1; i < html.Length; i++)
+        {
+            char c = html[i];
+            if (quote != '\0')
+            {
+                if (c == quote) quote = '\0';
+            }
+            else if (c == '"' || c == '\'') quote = c;
+            else if (c == '>') return i + 1;
+        }
+        return html.Length;
     }
 
     internal static List<string> Words(string s) => Tokens(s).Where(t => !char.IsWhiteSpace(t[0])).ToList();
@@ -185,8 +213,7 @@ public static class CfHtml
     /// header's byte offsets are recomputed. Null when there are no fragment markers.</summary>
     public static string? ReplaceFragment(string cfHtml, string fragment)
     {
-        // The header is "Key:value" lines; the HTML starts at the first '<'.
-        int htmlStart = cfHtml.IndexOf('<');
+        int htmlStart = HtmlStart(cfHtml);
         if (htmlStart < 0) return null;
         var html = cfHtml[htmlStart..];
         int start = html.IndexOf(StartMarker, StringComparison.OrdinalIgnoreCase);
@@ -195,6 +222,27 @@ public static class CfHtml
         int end = html.IndexOf(EndMarker, start, StringComparison.OrdinalIgnoreCase);
         if (end < 0) return null;
         return Build(html[..start], fragment, html[end..]);
+    }
+
+    /// <summary>Where the HTML starts: the header's StartHTML byte offset when it is valid, else the first '&lt;'
+    /// (the header is "Key:value" lines).</summary>
+    static int HtmlStart(string cfHtml)
+    {
+        const string key = "StartHTML:";
+        int at = cfHtml.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+        if (at >= 0)
+        {
+            int n = at + key.Length;
+            int stop = n;
+            while (stop < cfHtml.Length && char.IsAsciiDigit(cfHtml[stop])) stop++;
+            if (stop > n && int.TryParse(cfHtml.AsSpan(n, stop - n), NumberStyles.None, CultureInfo.InvariantCulture, out int offset))
+            {
+                var bytes = Encoding.UTF8.GetBytes(cfHtml);
+                if (offset > 0 && offset < bytes.Length && bytes[offset] == (byte)'<')
+                    return Encoding.UTF8.GetCharCount(bytes, 0, offset);
+            }
+        }
+        return cfHtml.IndexOf('<');
     }
 
     static string Build(string before, string fragment, string after)

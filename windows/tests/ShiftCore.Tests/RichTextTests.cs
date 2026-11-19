@@ -32,6 +32,32 @@ public class RichTextTests
                 "akuo", "שלום"));
 
     [Fact]
+    public void QuotedGreaterThanInsideATag() =>
+        Assert.Equal("<a title=\"a>b\" href='x>y'>שלום</a>",
+            RichText.ConvertHtml("<a title=\"a>b\" href='x>y'>akuo</a>", "akuo", "שלום"));
+
+    [Fact]
+    public void WordAndOutlookEntities() =>
+        Assert.Equal("<p>don\u2019t\u2026 \u200Fשלום</p>",
+            RichText.ConvertHtml("<p>don&rsquo;t&hellip; &rlm;akuo</p>", "don\u2019t\u2026 \u200Fakuo", "don\u2019t\u2026 \u200Fשלום"));
+
+    [Fact]
+    public void CfHtmlUsesStartHtmlOffsetNotFirstAngleBracket()
+    {
+        // A header field with '<' before the HTML: the StartHTML offset says where the HTML really starts.
+        var html = "<html><body><!--StartFragment--><p>akuo</p><!--EndFragment--></body></html>";
+        var head = "Version:0.9\r\nStartHTML:{0:D10}\r\nEndHTML:0000000000\r\nStartFragment:0000000000\r\n" +
+                   "EndFragment:0000000000\r\nSourceURL:https://example.com/?q=<x>\r\n";
+        int headBytes = Encoding.UTF8.GetByteCount(string.Format(head, 0));
+        var original = string.Format(head, headBytes) + html;
+        var cf = CfHtml.ReplaceFragment(original, "<p>שלום</p>");
+        Assert.NotNull(cf);
+        // Searching for the first '<' would have copied "<x>" from the header into the HTML.
+        Assert.DoesNotContain("<x>", cf);
+        Assert.EndsWith("<html><body><!--StartFragment--><p>שלום</p><!--EndFragment--></body></html>", cf);
+    }
+
+    [Fact]
     public void WordSplitByATagFallsBack() =>
         Assert.Null(RichText.ConvertHtml("<p>ak<b>uo</b></p>", "akuo", "שלום"));
 
