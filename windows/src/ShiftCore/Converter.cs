@@ -192,9 +192,11 @@ public sealed class Converter
         var target = TextTools.Fold(word);
         int maxDistance = word.Length <= 4 ? 1 : 2;
         (int D, string Word)? best = null;
+        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30).
+        var lowered = word.ToLowerInvariant();
         foreach (var g in _spell.Guesses(word, lang))
         {
-            if (g == word) continue;
+            if (g.ToLowerInvariant() == lowered) continue;
             int d = TextTools.Distance(target, TextTools.Fold(g));
             if (d <= maxDistance && (best is null || d < best.Value.D)) best = (d, g);
         }

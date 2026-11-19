@@ -37,6 +37,23 @@ struct FakeSpell: SpellChecking {
     }
 }
 
+/// Like the Windows en-US spell checker: for a word it does not know, it also suggests the same word
+/// with a capital first letter ("vhh" -> "Vhh"), which must not count as a spelling fix (#30).
+struct CapitalizingSpell: SpellChecking {
+    let base = FakeSpell()
+    let extraHe: Set<String> = ["היי"]
+
+    func isCorrect(_ word: String, lang: Lang) -> Bool {
+        base.isCorrect(word, lang: lang) || (lang == .he && extraHe.contains(word))
+    }
+
+    func guesses(for word: String, lang: Lang) -> [String] {
+        var g = base.guesses(for: word, lang: lang)
+        if lang == .en, !isCorrect(word, lang: .en) { g.insert(word.prefix(1).uppercased() + word.dropFirst(), at: 0) }
+        return g
+    }
+}
+
 @Suite struct ConverterTests {
     func converter() throws -> Converter { Converter(table: try macTable(), spell: FakeSpell()) }
 
@@ -67,6 +84,15 @@ struct FakeSpell: SpellChecking {
     ])
     func smart(input: String, expected: String) throws {
         #expect(try converter().convert(input).text == expected)
+    }
+
+    @Test func capitalOnlyGuessIsNotAFix() throws {
+        let c = Converter(table: try macTable(), spell: CapitalizingSpell())
+        let r = c.convert("vhh")
+        #expect(r.text == "היי")
+        #expect(r.switchTo == .hebrew)
+        // A real typo still gets its fix, not a capitalized copy of itself.
+        #expect(c.convert("teh").text == "the")
     }
 
     @Test func switchTarget() throws {

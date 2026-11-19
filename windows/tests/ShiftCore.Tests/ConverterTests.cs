@@ -26,6 +26,23 @@ sealed class FakeSpell : ISpellChecking
         Words(lang).Where(w => TextTools.Distance(word.ToLowerInvariant(), w) <= 2).Order(StringComparer.Ordinal).ToList();
 }
 
+/// <summary>Like the Windows en-US spell checker: for a word it does not know, it also suggests the same
+/// word with a capital first letter ("vhh" -> "Vhh"), which must not count as a spelling fix (#30).</summary>
+sealed class CapitalizingSpell : ISpellChecking
+{
+    readonly FakeSpell _base = new();
+
+    public bool IsCorrect(string word, Lang lang) => _base.IsCorrect(word, lang) || (lang == Lang.He && word == "היי");
+
+    public IReadOnlyList<string> Guesses(string word, Lang lang)
+    {
+        var g = _base.Guesses(word, lang).ToList();
+        if (lang == Lang.En && !IsCorrect(word, Lang.En) && word.Length > 0)
+            g.Insert(0, char.ToUpperInvariant(word[0]) + word[1..]);
+        return g;
+    }
+}
+
 public class LayoutTableTests
 {
     [Fact]
@@ -83,6 +100,17 @@ public class ConverterTests
     [InlineData("IM", "I'M")]
     [InlineData("its", "its")]
     public void Smart(string input, string expected) => Assert.Equal(expected, Make().Convert(input).Text);
+
+    [Fact]
+    public void CapitalOnlyGuessIsNotAFix()
+    {
+        var c = new Converter(Fixtures.MacTable(), new CapitalizingSpell());
+        var r = c.Convert("vhh");
+        Assert.Equal("היי", r.Text);
+        Assert.Equal(Script.Hebrew, r.SwitchTo);
+        // A real typo still gets its fix, not a capitalized copy of itself.
+        Assert.Equal("the", c.Convert("teh").Text);
+    }
 
     [Fact]
     public void SwitchTarget()
