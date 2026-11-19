@@ -66,6 +66,8 @@ sealed class SelectionConverter
 
             var saved = ClipboardSnapshot.Take();
             var text = await CopySelection(500);
+            // The rich copy, when the app made one: list numbers, bullets and bold live only there (#26).
+            var html = text is null ? null : ReadHtml();
             AutoSelection? autoSelection = null;
             if (text is null && _settings.FixWordBeforeCursor)
             {
@@ -92,6 +94,9 @@ sealed class SelectionConverter
 
             var converted = new DataObject();
             converted.SetData(DataFormats.UnicodeText, false, result.Text);
+            if (html is not null && CfHtml.Fragment(html) is { } fragment &&
+                RichText.ConvertHtml(fragment, text, result.Text) is { } rich)
+                converted.SetData(DataFormats.Html, false, CfHtml.Wrap(rich));
             if (!ClipboardSnapshot.Write(converted, _settings.KeepOutOfClipboardHistory))
             {
                 // Pasting now would paste whatever is on the clipboard instead of the converted text.
@@ -135,6 +140,20 @@ sealed class SelectionConverter
         var s = Retry(() => Clipboard.ContainsText() ? Clipboard.GetText() : "");
         if (s.Length == 0 || IsEditorLineCopy()) return null;
         return s;
+    }
+
+    /// <summary>The clipboard's "HTML Format" data (with its header), or null.</summary>
+    static string? ReadHtml()
+    {
+        try
+        {
+            return Retry(() => Clipboard.ContainsText(TextDataFormat.Html) ? Clipboard.GetText(TextDataFormat.Html) : null);
+        }
+        catch (Exception e)
+        {
+            ErrorLog.Write("html read", e);
+            return null;
+        }
     }
 
     /// <summary>A selection this app made, and how to undo it (caret back where it was).</summary>

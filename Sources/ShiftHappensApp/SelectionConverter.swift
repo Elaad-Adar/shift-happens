@@ -57,6 +57,8 @@ final class SelectionConverter {
             let saved = PasteboardSnapshot(pb)
 
             var text = await copySelection(pb, timeout: 0.5)
+            // The rich copy, when the app made one: list numbers, bullets and bold live only there (#26).
+            let html = text == nil ? nil : pb.string(forType: .html)
             var autoSelection: AutoSelection?
             if text == nil, Settings.shared.fixWordBeforeCursor {
                 autoSelection = await selectWordBeforeCursor(pb)
@@ -79,7 +81,12 @@ final class SelectionConverter {
             }
 
             pb.clearContents()
-            pb.setString(result.text, forType: .string)
+            let item = NSPasteboardItem()
+            if let html, let rich = RichText.convertHTML(html, original: text, converted: result.text) {
+                item.setString(rich, forType: .html)
+            }
+            item.setString(result.text, forType: .string)
+            pb.writeObjects([item])
             let ours = pb.changeCount
             Keys.press(UInt16(kVK_ANSI_V), flags: .maskCommand)
 
