@@ -92,7 +92,15 @@ sealed class SelectionConverter
 
             var converted = new DataObject();
             converted.SetData(DataFormats.UnicodeText, false, result.Text);
-            ClipboardSnapshot.Write(converted, _settings.KeepOutOfClipboardHistory);
+            if (!ClipboardSnapshot.Write(converted, _settings.KeepOutOfClipboardHistory))
+            {
+                // Pasting now would paste whatever is on the clipboard instead of the converted text.
+                autoSelection?.Restore();
+                saved.Restore(_settings.KeepOutOfClipboardHistory);
+                LastStatus = "Clipboard busy, nothing changed";
+                SystemSounds.Beep.Play();
+                return;
+            }
             uint ours = Native.GetClipboardSequenceNumber();
             Native.CtrlChord((ushort)Keys.V);
 
