@@ -9,6 +9,11 @@ Each release's section is copied into its GitHub release notes. Newest first.
 - Windows: works when the English keyboard is installed as English (Israel) or another English variant
   that Windows gives no classic language id (#29). When a keyboard is really missing, the hotkey now shows
   a message saying so the first time, instead of only beeping.
+- Windows: a likely cause of the app closing without a message is fixed (#27). When it puts your
+  clipboard back, the app now keeps only text and raw data, which Windows can take without calling back
+  into the app. Errors the app catches are written to `%LOCALAPPDATA%\ShiftHappens\error.log`.
+- Windows: the app's own clipboard use is kept out of clipboard history (Win+V) and the cloud clipboard,
+  so only what you copy shows there (#28). On by default; turn it off in Settings.
 
 ## 1.5.0
 

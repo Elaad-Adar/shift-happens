@@ -74,7 +74,7 @@ sealed class SelectionConverter
             }
             if (text is null)
             {
-                saved.Restore();
+                saved.Restore(_settings.KeepOutOfClipboardHistory);
                 LastStatus = _settings.FixWordBeforeCursor ? "No word before the cursor" : "Nothing selected";
                 SystemSounds.Beep.Play();
                 return;
@@ -85,12 +85,22 @@ sealed class SelectionConverter
             {
                 // Put the cursor back where it was instead of leaving our selection behind.
                 autoSelection?.Restore();
-                saved.Restore();
+                saved.Restore(_settings.KeepOutOfClipboardHistory);
                 LastStatus = "Looks right already";
                 return;
             }
 
-            Retry(() => { Clipboard.SetText(result.Text); return true; });
+            var converted = new DataObject();
+            converted.SetData(DataFormats.UnicodeText, false, result.Text);
+            if (!ClipboardSnapshot.Write(converted, _settings.KeepOutOfClipboardHistory))
+            {
+                // Pasting now would paste whatever is on the clipboard instead of the converted text.
+                autoSelection?.Restore();
+                saved.Restore(_settings.KeepOutOfClipboardHistory);
+                LastStatus = "Clipboard busy, nothing changed";
+                SystemSounds.Beep.Play();
+                return;
+            }
             uint ours = Native.GetClipboardSequenceNumber();
             Native.CtrlChord((ushort)Keys.V);
 
@@ -101,10 +111,11 @@ sealed class SelectionConverter
             // Let the app read the clipboard, then put the user's clipboard back unless something
             // else has written to it in the meantime.
             await Task.Delay(400);
-            if (Native.GetClipboardSequenceNumber() == ours) saved.Restore();
+            if (Native.GetClipboardSequenceNumber() == ours) saved.Restore(_settings.KeepOutOfClipboardHistory);
         }
         catch (Exception e)
         {
+            ErrorLog.Write("convert", e);
             LastStatus = "Failed: " + e.Message;
             SystemSounds.Beep.Play();
         }
@@ -146,8 +157,9 @@ sealed class SelectionConverter
             };
             return bytes is not null && LineCopy.IsFromEmptySelection(bytes);
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            ErrorLog.Write("line copy check", e);
             return false;
         }
     }
@@ -242,49 +254,120 @@ sealed class SelectionConverter
     }
 }
 
-/// <summary>Every format on the clipboard that can be read back, so it can be put back.</summary>
+/// <summary>The clipboard formats that can be read back and safely put back: text and raw data. Writing it
+/// back hands Windows every format at once (copy: true), so nothing calls back into this app later.</summary>
 sealed class ClipboardSnapshot
 {
-    readonly DataObject? _data;
+    /// <summary>Text formats WinForms writes as plain text. Any other format is kept only as raw bytes: an
+    /// object such as a bitmap or a .NET value would need serializing when Windows asks for it, and a
+    /// failure there happens inside a Windows callback and ends the process (#27).</summary>
+    static readonly HashSet<string> TextFormats = new(StringComparer.Ordinal)
+    {
+        DataFormats.UnicodeText, DataFormats.Text, DataFormats.OemText, DataFormats.Rtf, DataFormats.Html,
+    };
 
-    ClipboardSnapshot(DataObject? data) => _data = data;
+    /// <summary>Windows' clipboard history and cloud clipboard formats (#28): content that carries them is
+    /// left out of Win+V history and not synced.</summary>
+    const string ExcludeFromMonitors = "ExcludeClipboardContentFromMonitorProcessing";
+    const string CanIncludeInHistory = "CanIncludeInClipboardHistory";
+    const string CanUploadToCloud = "CanUploadToCloudClipboard";
+
+    readonly List<(string Format, object Value)> _items;
+    /// <summary>The clipboard's change counter when the snapshot was taken.</summary>
+    readonly uint _sequence;
+
+    ClipboardSnapshot(List<(string, object)> items, uint sequence)
+    {
+        _items = items;
+        _sequence = sequence;
+    }
 
     public static ClipboardSnapshot Take()
     {
+        uint sequence = Native.GetClipboardSequenceNumber();
+        var items = new List<(string, object)>();
         try
         {
             var src = SelectionConverter.Retry(Clipboard.GetDataObject);
-            if (src is null) return new ClipboardSnapshot(null);
-            var copy = new DataObject();
+            if (src is null) return new ClipboardSnapshot(items, sequence);
             foreach (var format in src.GetFormats(false))
             {
                 try
                 {
-                    if (src.GetData(format, false) is { } value) copy.SetData(format, false, value);
+                    if (Keep(format, src.GetData(format, false)) is { } value) items.Add((format, value));
                 }
                 catch (Exception)
                 {
                     // Some formats (delay-rendered, private) cannot be read back; skip them.
                 }
             }
-            return new ClipboardSnapshot(copy);
         }
-        catch (ExternalException)
+        catch (ExternalException e)
         {
-            return new ClipboardSnapshot(null);
+            ErrorLog.Write("clipboard read", e);
+        }
+        return new ClipboardSnapshot(items, sequence);
+    }
+
+    /// <summary>The value to keep for one format, as a type WinForms writes without serializing, or null.</summary>
+    static object? Keep(string format, object? value) => value switch
+    {
+        string s when TextFormats.Contains(format) => s,
+        string[] files when format == DataFormats.FileDrop => files,
+        MemoryStream ms => new MemoryStream(ms.ToArray(), writable: false),
+        byte[] bytes => new MemoryStream(bytes, writable: false),
+        _ => null,
+    };
+
+    public void Restore(bool keepOutOfHistory)
+    {
+        // Nothing has written to the clipboard since the snapshot (for example nothing was selected): leave it
+        // alone. A restore keeps only the safe formats, so it would drop the rest for no reason.
+        if (Native.GetClipboardSequenceNumber() == _sequence) return;
+        var data = new DataObject();
+        foreach (var (format, value) in _items)
+        {
+            if (value is MemoryStream ms) ms.Position = 0;
+            data.SetData(format, false, value);
+        }
+        if (data.GetFormats().Length == 0)
+        {
+            try { SelectionConverter.Retry(() => { Clipboard.Clear(); return true; }); }
+            catch (ExternalException e) { ErrorLog.Write("clipboard clear", e); }
+            return;
+        }
+        if (Write(data, keepOutOfHistory)) return;
+        // The full restore failed: fall back to the plain text, so a half-written clipboard is not left behind.
+        if (_items.FirstOrDefault(i => i.Format == DataFormats.UnicodeText).Value is string text)
+        {
+            var plain = new DataObject();
+            plain.SetData(DataFormats.UnicodeText, false, text);
+            Write(plain, keepOutOfHistory);
         }
     }
 
-    public void Restore()
+    /// <summary>Puts <paramref name="data"/> on the clipboard, all formats rendered now. With
+    /// <paramref name="keepOutOfHistory"/>, adds the formats that keep it out of Win+V history. False on failure.</summary>
+    public static bool Write(DataObject data, bool keepOutOfHistory)
     {
+        if (keepOutOfHistory)
+        {
+            // Each flag is a raw 4-byte DWORD. A plain int would be wrapped by .NET and Windows would ignore it.
+            data.SetData(ExcludeFromMonitors, false, Dword(0));
+            data.SetData(CanIncludeInHistory, false, Dword(0));
+            data.SetData(CanUploadToCloud, false, Dword(0));
+        }
         try
         {
-            if (_data is null || _data.GetFormats().Length == 0) SelectionConverter.Retry(() => { Clipboard.Clear(); return true; });
-            else Clipboard.SetDataObject(_data, copy: true, retryTimes: 10, retryDelay: 30);
+            Clipboard.SetDataObject(data, copy: true, retryTimes: 10, retryDelay: 30);
+            return true;
         }
-        catch (ExternalException)
+        catch (Exception e) when (e is ExternalException or ThreadStateException or NotSupportedException)
         {
-            // Leave the converted text on the clipboard rather than crash.
+            ErrorLog.Write("clipboard write", e);
+            return false;
         }
     }
+
+    static MemoryStream Dword(uint value) => new(BitConverter.GetBytes(value), writable: false);
 }

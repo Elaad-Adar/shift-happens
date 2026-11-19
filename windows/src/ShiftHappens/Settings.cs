@@ -57,6 +57,8 @@ sealed class Settings
     /// <summary>With nothing selected, select and fix the word just before the cursor.</summary>
     public bool FixWordBeforeCursor { get; set; } = true;
     public bool WelcomeShown { get; set; }
+    /// <summary>Mark the app's own clipboard writes so Windows leaves them out of Win+V history (#28).</summary>
+    public bool KeepOutOfClipboardHistory { get; set; } = true;
     /// <summary>Modifier whose double tap runs Fix, or null (default: off, no keyboard hook).</summary>
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public DoubleTapKey? DoubleTapKey { get; set; }
