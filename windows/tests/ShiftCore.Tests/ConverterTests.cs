@@ -43,6 +43,24 @@ sealed class CapitalizingSpell : ISpellChecking
     }
 }
 
+/// <summary>A spell checker with fixed suggestions, for the cases real spell checkers give on short words.</summary>
+sealed class GuessSpell(string[] guesses) : ISpellChecking
+{
+    readonly FakeSpell _base = new();
+
+    public bool IsCorrect(string word, Lang lang) => _base.IsCorrect(word, lang) || (lang == Lang.He && word == "היי");
+
+    public IReadOnlyList<string> Guesses(string word, Lang lang) =>
+        lang == Lang.En && word == "vhh" ? guesses : _base.Guesses(word, lang);
+}
+
+/// <summary>Suggests the name "London" for "londn".</summary>
+sealed class NameSpell : ISpellChecking
+{
+    public bool IsCorrect(string word, Lang lang) => false;
+    public IReadOnlyList<string> Guesses(string word, Lang lang) => word == "londn" ? new[] { "London" } : Array.Empty<string>();
+}
+
 public class LayoutTableTests
 {
     [Fact]
@@ -113,6 +131,20 @@ public class ConverterTests
     }
 
     [Fact]
+    public void NameIsNotAFixForLowercase()
+    {
+        // The Windows spell checker suggests the name "Vah" for "vhh". A lowercase word is not a
+        // misspelled name, so the real Hebrew word "היי" after the swap wins.
+        var c = new Converter(Fixtures.MacTable(), new GuessSpell(new[] { "Vah" }));
+        var r = c.Convert("vhh");
+        Assert.Equal("היי", r.Text);
+        Assert.Equal(Script.Hebrew, r.SwitchTo);
+        Assert.Equal("the", c.Convert("teh").Text);
+        // A longer lowercase word may be a misspelled name.
+        Assert.Equal("London", new Converter(Fixtures.MacTable(), new NameSpell()).Convert("londn").Text);
+    }
+
+    [Fact]
     public void SwitchTarget()
     {
         var c = Make();
@@ -135,6 +167,16 @@ public class ConverterTests
     {
         Assert.Equal("שלום ץ", Make().Convert("akuo .").Text);
         Assert.Equal("hello שלום .", Make().Convert("hello akuo .").Text);
+    }
+
+    [Fact]
+    public void ListNumbersStay()
+    {
+        // A numbered list copied as plain text: "1." is a list number, not a mistyped "1ץ".
+        Assert.Equal("1. שלום\n2. שלום", Make().Convert("1. akuo\n2. akuo").Text);
+        Assert.Equal("שלום 3.5", Make().Convert("akuo 3.5").Text);
+        // Real punctuation next to a number still swaps: the / key types "." on Hebrew.
+        Assert.Equal("שלום 3.", Make().Convert("akuo 3/").Text);
     }
 }
 

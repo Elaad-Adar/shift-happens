@@ -8,6 +8,18 @@ import Testing
             == "<meta charset='utf-8'><ol><li>שלום</li>\n<li>שלום שלום</li></ol>")
     }
 
+    @Test func listNumbersOnlyInPlainText() {
+        // Electron editors put "1." in the plain text, while the HTML list draws its numbers.
+        let html = "<ol><li><p>akuo</p></li><li><p>akuo</p></li></ol>"
+        #expect(RichText.convertHTML(html, original: "1. akuo\n2. akuo", converted: "1. שלום\n2. שלום")
+            == "<ol><li><p>שלום</p></li><li><p>שלום</p></li></ol>")
+        #expect(RichText.convertHTML("<ul><li>akuo</li></ul>", original: "• akuo", converted: "• שלום")
+            == "<ul><li>שלום</li></ul>")
+        // A marker the conversion changed, or a missing word with letters, still falls back.
+        #expect(RichText.convertHTML(html, original: "1. akuo\n2. akuo", converted: "1ץ שלום\n2ץ שלום") == nil)
+        #expect(RichText.convertHTML("<p>akuo</p>", original: "akuo akuo", converted: "שלום שלום") == nil)
+    }
+
     @Test func unchangedTextStaysByteForByte() {
         let html = "<p>x &amp; y</p><p><b>akuo</b></p>"
         #expect(RichText.convertHTML(html, original: "x & y\nakuo", converted: "x & y\nשלום")

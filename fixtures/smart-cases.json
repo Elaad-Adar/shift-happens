@@ -157,6 +157,11 @@
       "out": "akuo",
       "mode": "force",
       "why": "force swap Hebrew to English"
+    },
+    {
+      "in": "1. akuo",
+      "out": "1. שלום",
+      "why": "list number stays; . must not become ץ (#26)"
     }
   ]
 }

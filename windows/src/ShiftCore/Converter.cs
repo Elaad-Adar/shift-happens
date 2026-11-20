@@ -46,6 +46,16 @@ public sealed class Converter
         return new string(s.Select(c => map.GetValueOrDefault(c, c)).ToArray());
     }
 
+    /// <summary>Swap of a run with no letters. In a run with a digit, a character is kept when its swap is a
+    /// letter: list numbers and amounts stay ("1." is not "1ץ", "3.5" is not "3ץ5"), while real punctuation
+    /// still swaps ("3/" becomes "3." on the Hebrew layout).</summary>
+    public string SwapNeutral(string s, Script from)
+    {
+        if (!s.Any(char.IsNumber)) return Swap(s, from);
+        var map = from == Script.Latin ? _latinToHebrew : _hebrewToLatin;
+        return new string(s.Select(c => map.TryGetValue(c, out var m) && !char.IsLetter(m) ? m : c).ToArray());
+    }
+
     sealed record Word(int Index, Script Script, string Core, string Swapped, string SwappedCore, bool OrigOk, bool SwapOk,
         string? Contraction);
 
@@ -134,7 +144,7 @@ public sealed class Converter
             var from = swappedCount.OrderByDescending(kv => kv.Value).First().Key;
             target = from.Other();
             if (total == words.Count)
-                foreach (var i in neutral) runs[i] = Swap(runs[i], from);
+                foreach (var i in neutral) runs[i] = SwapNeutral(runs[i], from);
         }
 
         return new Conversion(string.Concat(runs), target, total, fixedCount, notes);
@@ -192,11 +202,14 @@ public sealed class Converter
         var target = TextTools.Fold(word);
         int maxDistance = word.Length <= 4 ? 1 : 2;
         (int D, string Word)? best = null;
-        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30).
+        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30), and
+        // a short lowercase word is not a misspelled name ("Vah" for "vhh"). Longer ones may be ("londn").
         var lowered = word.ToLowerInvariant();
+        bool isLower = word == lowered && word.Length <= 4;
         foreach (var g in _spell.Guesses(word, lang))
         {
             if (g.ToLowerInvariant() == lowered) continue;
+            if (isLower && g.Length > 0 && char.IsUpper(g[0])) continue;
             int d = TextTools.Distance(target, TextTools.Fold(g));
             if (d <= maxDistance && (best is null || d < best.Value.D)) best = (d, g);
         }

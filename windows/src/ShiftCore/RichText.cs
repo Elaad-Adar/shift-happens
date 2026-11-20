@@ -77,6 +77,9 @@ public static class RichText
                     text.Append(token);
                     continue;
                 }
+                // List numbers and bullets ("1.", "•") are in the plain text but drawn by the page, so the
+                // HTML text lacks them. Skip such a plain-text word when it has no letters and stays as is.
+                while (k < from.Count && token != from[k] && IsMarker(from[k], to[k])) k++;
                 if (k >= from.Count || token != from[k]) return null;
                 if (to[k] != token) changed = true;
                 text.Append(to[k]);
@@ -84,8 +87,12 @@ public static class RichText
             }
             output.Append(changed ? Encode(text.ToString()) : raw);
         }
+        while (k < from.Count && IsMarker(from[k], to[k])) k++;
         return k == from.Count ? output.ToString() : null;
     }
+
+    /// <summary>A plain-text word the HTML may leave out: no letters, and not changed by the conversion.</summary>
+    internal static bool IsMarker(string from, string to) => from == to && !from.Any(char.IsLetter);
 
     /// <summary>The index just past the <c>&gt;</c> that closes the tag starting at <paramref name="start"/>.
     /// A <c>&gt;</c> inside a quoted attribute value (<c>title="a&gt;b"</c>) does not close it.</summary>

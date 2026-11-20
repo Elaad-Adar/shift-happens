@@ -54,6 +54,26 @@ struct CapitalizingSpell: SpellChecking {
     }
 }
 
+/// A spell checker with fixed suggestions, for the cases real spell checkers give on short words.
+struct GuessSpell: SpellChecking {
+    let base = FakeSpell()
+    let guessList: [String]
+
+    func isCorrect(_ word: String, lang: Lang) -> Bool {
+        base.isCorrect(word, lang: lang) || (lang == .he && word == "היי")
+    }
+
+    func guesses(for word: String, lang: Lang) -> [String] {
+        lang == .en && word == "vhh" ? guessList : base.guesses(for: word, lang: lang)
+    }
+}
+
+/// Suggests the name "London" for "londn".
+struct NameSpell: SpellChecking {
+    func isCorrect(_ word: String, lang: Lang) -> Bool { false }
+    func guesses(for word: String, lang: Lang) -> [String] { word == "londn" ? ["London"] : [] }
+}
+
 @Suite struct ConverterTests {
     func converter() throws -> Converter { Converter(table: try macTable(), spell: FakeSpell()) }
 
@@ -95,6 +115,19 @@ struct CapitalizingSpell: SpellChecking {
         #expect(c.convert("teh").text == "the")
     }
 
+    @Test func nameIsNotAFixForLowercase() throws {
+        // The Windows spell checker suggests the name "Vah" for "vhh". A lowercase word is not a
+        // misspelled name, so the real Hebrew word "היי" after the swap wins.
+        let c = Converter(table: try macTable(), spell: GuessSpell(guessList: ["Vah"]))
+        let r = c.convert("vhh")
+        #expect(r.text == "היי")
+        #expect(r.switchTo == .hebrew)
+        #expect(c.convert("teh").text == "the")
+        // A longer lowercase word may be a misspelled name.
+        let names = Converter(table: try macTable(), spell: NameSpell())
+        #expect(names.convert("londn").text == "London")
+    }
+
     @Test func switchTarget() throws {
         let c = try converter()
         #expect(c.convert("akuo").switchTo == .hebrew)
@@ -114,6 +147,14 @@ struct CapitalizingSpell: SpellChecking {
         #expect(try converter().convert("akuo .").text == "שלום ץ")
         // Mixed selection: the lone "." is left alone.
         #expect(try converter().convert("hello akuo .").text == "hello שלום .")
+    }
+
+    @Test func listNumbersStay() throws {
+        // A numbered list copied as plain text: "1." is a list number, not a mistyped "1ץ".
+        #expect(try converter().convert("1. akuo\n2. akuo").text == "1. שלום\n2. שלום")
+        #expect(try converter().convert("akuo 3.5").text == "שלום 3.5")
+        // Real punctuation next to a number still swaps: the / key types "." on Hebrew.
+        #expect(try converter().convert("akuo 3/").text == "שלום 3.")
     }
 }
 
