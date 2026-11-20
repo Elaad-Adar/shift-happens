@@ -46,6 +46,15 @@ public final class Converter {
         return String(s.map { map[$0] ?? $0 })
     }
 
+    /// Swap of a run with no letters. In a run with a digit, a character is kept when its swap is a
+    /// letter: list numbers and amounts stay ("1." is not "1ץ", "3.5" is not "3ץ5"), while real
+    /// punctuation still swaps ("3/" becomes "3." on the Hebrew layout).
+    func swapNeutral(_ s: String, from: Script) -> String {
+        guard s.contains(where: \.isNumber) else { return swap(s, from: from) }
+        let map = from == .latin ? latinToHebrew : hebrewToLatin
+        return String(s.map { c in map[c].flatMap { $0.isLetter ? nil : $0 } ?? c })
+    }
+
     private struct Word {
         let index: Int          // index into runs
         let script: Script
@@ -130,7 +139,7 @@ public final class Converter {
         if let (from, _) = swappedCount.max(by: { $0.value < $1.value }) {
             target = from.other
             if swappedCount.values.reduce(0, +) == words.count {
-                for i in neutral { runs[i] = swap(runs[i], from: from) }
+                for i in neutral { runs[i] = swapNeutral(runs[i], from: from) }
             }
         }
 
@@ -190,9 +199,12 @@ public final class Converter {
         let target = TextTools.fold(word)
         let maxDistance = word.count <= 4 ? 1 : 2
         var best: (d: Int, word: String)?
-        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30).
+        // A guess that differs only in capital letters ("Vhh" for "vhh") is not a spelling fix (#30), and
+        // a short lowercase word is not a misspelled name ("Vah" for "vhh"). Longer ones may be ("londn").
         let lowered = word.lowercased()
-        for g in spell.guesses(for: word, lang: lang) where g.lowercased() != lowered {
+        let isLower = word == lowered && word.count <= 4
+        for g in spell.guesses(for: word, lang: lang)
+        where g.lowercased() != lowered && !(isLower && g.first?.isUppercase == true) {
             let d = TextTools.distance(target, TextTools.fold(g))
             if d <= maxDistance && (best == nil || d < best!.d) { best = (d, g) }
         }

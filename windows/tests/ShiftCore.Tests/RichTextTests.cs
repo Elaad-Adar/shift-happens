@@ -13,6 +13,19 @@ public class RichTextTests
                 "akuo\nakuo akuo", "שלום\nשלום שלום"));
 
     [Fact]
+    public void ListNumbersOnlyInPlainText()
+    {
+        // Electron editors put "1." in the plain text, while the HTML list draws its numbers.
+        const string html = "<ol><li><p>akuo</p></li><li><p>akuo</p></li></ol>";
+        Assert.Equal("<ol><li><p>שלום</p></li><li><p>שלום</p></li></ol>",
+            RichText.ConvertHtml(html, "1. akuo\n2. akuo", "1. שלום\n2. שלום"));
+        Assert.Equal("<ul><li>שלום</li></ul>", RichText.ConvertHtml("<ul><li>akuo</li></ul>", "• akuo", "• שלום"));
+        // A marker the conversion changed, or a missing word with letters, still falls back.
+        Assert.Null(RichText.ConvertHtml(html, "1. akuo\n2. akuo", "1ץ שלום\n2ץ שלום"));
+        Assert.Null(RichText.ConvertHtml("<p>akuo</p>", "akuo akuo", "שלום שלום"));
+    }
+
+    [Fact]
     public void UnchangedTextStaysByteForByte() =>
         Assert.Equal("<p>x &amp; y</p><p><b>שלום</b></p>",
             RichText.ConvertHtml("<p>x &amp; y</p><p><b>akuo</b></p>", "x & y\nakuo", "x & y\nשלום"));

@@ -44,6 +44,9 @@ public enum RichText {
                     text += token
                     continue
                 }
+                // List numbers and bullets ("1.", "•") are in the plain text but drawn by the page, so the
+                // HTML text lacks them. Skip such a plain-text word when it has no letters and stays as is.
+                while k < from.count, token != from[k], isMarker(from[k], to[k]) { k += 1 }
                 guard k < from.count, token == from[k] else { return nil }
                 if to[k] != token { changed = true }
                 text += to[k]
@@ -51,7 +54,13 @@ public enum RichText {
             }
             out += changed ? encode(text) : raw
         }
+        while k < from.count, isMarker(from[k], to[k]) { k += 1 }
         return k == from.count ? out : nil
+    }
+
+    /// A plain-text word the HTML may leave out: no letters, and not changed by the conversion.
+    static func isMarker(_ from: String, _ to: String) -> Bool {
+        from == to && !from.contains(where: \.isLetter)
     }
 
     /// The index just past the `>` that closes the tag starting at `start`. A `>` inside a quoted attribute

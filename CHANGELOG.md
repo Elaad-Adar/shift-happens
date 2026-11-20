@@ -2,6 +2,15 @@
 
 Each release's section is copied into its GitHub release notes. Newest first.
 
+## 1.6.1
+
+- Fix and Swap keep numbered lists in Claude desktop and other Electron apps (#26). Their plain-text copy
+  carries the list numbers (`1.`), which the rich copy draws itself, so 1.6.0 fell back to plain text.
+- List numbers and other runs with a digit (`1.`, `2)`, `3.5`) are no longer swapped with the words around
+  them: `1. akuo` becomes `1. שלום`, not `1ץ שלום`.
+- Windows: Fix no longer turns a short lowercase word into a name the spell checker suggests (`vhh` gave
+  `Vah`; now `היי`, #30).
+
 ## 1.6.0
 
 - Fix no longer treats a suggestion that only adds a capital letter as a spelling fix, so short Hebrew
